@@ -128,8 +128,63 @@
             </div>
         </section>
 
-        <!-- Módulo 3: Log de eventos -->
-        <section class="rounded-2xl border border-slate-800 bg-slate-900/20 p-4 space-y-2">
+        <!-- Módulo 3: Verificación de Premios -->
+        <section class="space-y-3">
+            <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider px-1">Módulo 3 · Premios por Marcador Exacto</h2>
+
+            <!-- Simulador de ganador -->
+            <div class="rounded-2xl border border-emerald-800/40 bg-emerald-950/20 p-4 space-y-3">
+                <p class="text-xs text-slate-400">Simula un pronóstico con 12 puntos y <code class="text-emerald-400">premio_inmediato_ganado = true</code>. Verifica que el premio se muestre correctamente y sea <strong class="text-white">siempre el mismo para el mismo ID</strong>.</p>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">ID del pronóstico</label>
+                        <input id="inputPronId" type="text" value="42"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                            placeholder="ej: 42">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Marcador real</label>
+                        <div class="flex items-center gap-1">
+                            <input id="inputGL" type="number" value="2" min="0" max="20"
+                                class="w-12 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:border-emerald-500 focus:outline-none">
+                            <span class="text-slate-600 font-black text-sm">–</span>
+                            <input id="inputGV" type="number" value="1" min="0" max="20"
+                                class="w-12 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:border-emerald-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="simularGanador()" class="col-span-2 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-sm font-bold transition-all">
+                        🏆 Simular Ganador (12 pts)
+                    </button>
+                    <button onclick="simularPerdedor()" class="h-10 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 text-sm font-semibold transition-all">
+                        0 pts
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tarjeta de resultado (donde se muestra el premio) -->
+            <div id="premioContainer"></div>
+
+            <!-- Verificación de consistencia -->
+            <div class="rounded-2xl border border-slate-800 bg-slate-900/30 p-4 space-y-3">
+                <p class="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Verificar consistencia — mismo ID = mismo premio</p>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="probarConsistencia()" class="h-8 px-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold transition-colors">
+                        Recarga 5× el mismo ID
+                    </button>
+                    <button onclick="mostrarTodosLosPremios()" class="h-8 px-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold transition-colors">
+                        Ver los 6 premios posibles
+                    </button>
+                </div>
+                <div id="consistenciaLog" class="space-y-1 font-mono"></div>
+            </div>
+        </section>
+
+        <!-- Módulo 4: Log de eventos -->
+        <section class="rounded-2xl border border-slate-800 bg-slate-900/20 p-4 space-y-2" id="logSection">
             <div class="flex items-center justify-between">
                 <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider">📋 Log de Eventos</h2>
                 <button onclick="clearLog()" class="text-[10px] text-slate-600 hover:text-slate-400">Limpiar</button>
@@ -416,6 +471,131 @@
             const icon = el.querySelector('span');
             icon.textContent = '✓';
             icon.className = 'text-emerald-400 mt-0.5 shrink-0 font-black';
+        }
+
+        // ── Módulo de Premios ────────────────────────────────────────────
+
+        const PREMIOS_SANTI = [
+            "¡Ganaste una Cerveza Águila helada para tu próximo pedido! 🍺",
+            "¡Espectacular! Te ganaste un Bono del 10% de descuento en tu próxima compra. 🎟️",
+            "¡Qué puntería! Reclama una porción de papas fritas gratis en tu próxima visita. 🍟",
+            "¡Ganaste un Refresco Coca-Cola gratis para acompañar tu próximo combo! 🥤",
+            "¡Acierto Mundialista! Te ganaste un Bono de $5.000 COP para tu próximo consumo. 💰",
+            "¡Qué arquerazo! Te ganaste una empanada de la casa gratis para tu próxima compra. 🥟"
+        ];
+
+        function getPremioForPronostico(pronId) {
+            let hash = 0;
+            const str = String(pronId);
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash |= 0;
+            }
+            return PREMIOS_SANTI[Math.abs(hash) % PREMIOS_SANTI.length];
+        }
+
+        function buildPremioCard(pronId, gl, gv, marcadorAcertado) {
+            const matchLabel = `Colombia ${gl}–${gv} Brasil`;
+            if (!marcadorAcertado) {
+                return `
+                <div class="rounded-2xl border border-slate-800 bg-slate-900/30 p-4 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">Sin acierto · 0 pts</span>
+                        <span class="text-[10px] text-slate-500">${matchLabel}</span>
+                    </div>
+                    <p class="text-sm text-slate-500 italic">No hubo acierto exacto — no se genera premio.</p>
+                    <div class="text-center py-1">
+                        <span class="text-3xl">😔</span>
+                        <p class="text-xs text-slate-600 mt-1">El cliente no ve ninguna tarjeta de premio.</p>
+                    </div>
+                </div>`;
+            }
+            const premio = getPremioForPronostico(pronId);
+            const idx = Math.abs((() => {
+                let h = 0; const s = String(pronId);
+                for (let i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
+                return h;
+            })()) % PREMIOS_SANTI.length;
+            return `
+            <div class="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex flex-col gap-3">
+                <div class="flex items-start justify-between gap-2 flex-wrap">
+                    <span class="text-[10px] font-black text-emerald-400 uppercase tracking-wider">⚽ Marcador Exacto · 12 pts</span>
+                    <span class="text-[10px] font-semibold text-slate-400">${matchLabel}</span>
+                </div>
+                <p class="text-sm font-black text-white animate-pulse leading-snug">${premio}</p>
+                <p class="text-[10px] text-emerald-300/60 leading-relaxed border-t border-emerald-500/20 pt-2">
+                    Muestra esta pantalla en caja en tu próximo pedido para redimirlo.
+                </p>
+                <div class="border-t border-emerald-500/20 pt-2 space-y-0.5">
+                    <p class="text-[10px] text-slate-600 font-mono">ID pronóstico: <span class="text-slate-400">${pronId}</span></p>
+                    <p class="text-[10px] text-slate-600 font-mono">Índice premio: <span class="text-emerald-400">${idx}</span> / ${PREMIOS_SANTI.length - 1}</p>
+                    <p class="text-[10px] text-slate-600 font-mono">Función hash: <span class="text-slate-400">determinístico (siempre igual para este ID)</span></p>
+                </div>
+            </div>`;
+        }
+
+        function simularGanador() {
+            const pronId = document.getElementById('inputPronId').value.trim() || '42';
+            const gl = parseInt(document.getElementById('inputGL').value) || 0;
+            const gv = parseInt(document.getElementById('inputGV').value) || 0;
+            const premio = getPremioForPronostico(pronId);
+            document.getElementById('premioContainer').innerHTML = buildPremioCard(pronId, gl, gv, true);
+            log(`Premio para pronóstico #${pronId}: "${premio.substring(0,40)}..."`, 'success');
+            log(`Marcador exacto simulado: Colombia ${gl}–${gv} Brasil`, 'success');
+        }
+
+        function simularPerdedor() {
+            const gl = parseInt(document.getElementById('inputGL').value) || 0;
+            const gv = parseInt(document.getElementById('inputGV').value) || 0;
+            document.getElementById('premioContainer').innerHTML = buildPremioCard(null, gl, gv, false);
+            log('Sin acierto — tarjeta de premio no se muestra.', 'info');
+        }
+
+        function probarConsistencia() {
+            const pronId = document.getElementById('inputPronId').value.trim() || '42';
+            const container = document.getElementById('consistenciaLog');
+            container.innerHTML = '';
+            let todos_iguales = true;
+            const primer_premio = getPremioForPronostico(pronId);
+            for (let i = 1; i <= 5; i++) {
+                const p = getPremioForPronostico(pronId);
+                const igual = p === primer_premio;
+                if (!igual) todos_iguales = false;
+                const line = document.createElement('p');
+                line.className = `text-[11px] ${igual ? 'text-emerald-400' : 'text-rose-400'}`;
+                line.textContent = `Llamada ${i}: "${p.substring(0, 45)}..." ${igual ? '✓ igual' : '✗ diferente'}`;
+                container.appendChild(line);
+            }
+            const resumen = document.createElement('p');
+            resumen.className = `text-[11px] font-black mt-1 ${todos_iguales ? 'text-emerald-400' : 'text-rose-400'}`;
+            resumen.textContent = todos_iguales
+                ? `✓ CONSISTENTE — ID #${pronId} siempre da el mismo premio.`
+                : `✗ ERROR — El hash no es determinístico.`;
+            container.appendChild(resumen);
+            log(`Consistencia ID #${pronId}: ${todos_iguales ? 'PASÓ ✓' : 'FALLÓ ✗'}`, todos_iguales ? 'success' : 'error');
+        }
+
+        function mostrarTodosLosPremios() {
+            const container = document.getElementById('consistenciaLog');
+            container.innerHTML = '<p class="text-[11px] text-slate-500 mb-1 font-bold">IDs que generan cada premio:</p>';
+            const encontrados = {};
+            // Buscar IDs que mapeen a cada índice
+            for (let id = 1; id <= 1000; id++) {
+                let hash = 0;
+                const str = String(id);
+                for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
+                const idx = Math.abs(hash) % PREMIOS_SANTI.length;
+                if (!encontrados[idx]) encontrados[idx] = id;
+                if (Object.keys(encontrados).length === PREMIOS_SANTI.length) break;
+            }
+            PREMIOS_SANTI.forEach((premio, idx) => {
+                const ejId = encontrados[idx] ?? '?';
+                const line = document.createElement('p');
+                line.className = 'text-[11px] text-slate-300';
+                line.textContent = `[${idx}] ID ej. #${ejId} → ${premio.substring(0, 50)}...`;
+                container.appendChild(line);
+            });
+            log('Mapa completo de premios mostrado.', 'info');
         }
     </script>
 
