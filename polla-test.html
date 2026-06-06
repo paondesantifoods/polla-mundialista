@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Test de Bloqueos · Pa'onde Santi</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-slate-950 text-white min-h-screen font-sans">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-40 border-b border-amber-500/30 bg-slate-950/95 backdrop-blur px-4 py-3">
+        <div class="max-w-xl mx-auto flex items-center justify-between">
+            <div>
+                <p class="text-[10px] font-black text-amber-400 uppercase tracking-widest">Pa'onde Santi · Modo Prueba</p>
+                <h1 class="text-base font-black text-white">🧪 Verificación de Bloqueos</h1>
+            </div>
+            <a href="polla.html" class="h-8 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center transition-colors">
+                ← App Real
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-xl mx-auto px-4 py-5 space-y-5">
+
+        <!-- Panel de control -->
+        <section class="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-4">
+            <h2 class="text-sm font-black text-amber-400 uppercase tracking-wider">⚙️ Panel de Control</h2>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Partido empieza en</label>
+                    <div class="flex items-center gap-2">
+                        <input id="inputMinutes" type="number" min="1" max="60" value="3"
+                            class="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:border-amber-500 focus:outline-none">
+                        <span class="text-xs text-slate-400">minutos</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] text-slate-400 uppercase tracking-wider block mb-1">Bloquear con</label>
+                    <div class="flex items-center gap-2">
+                        <input id="inputLock" type="number" min="5" max="300" value="60"
+                            class="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-white text-center focus:border-amber-500 focus:outline-none">
+                        <span class="text-xs text-slate-400">segundos antes</span>
+                    </div>
+                </div>
+            </div>
+
+            <button id="btnReset" onclick="resetPrueba()"
+                class="w-full h-10 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-sm font-black transition-all">
+                ▶ Iniciar / Reiniciar Prueba
+            </button>
+
+            <!-- Estado en vivo -->
+            <div class="rounded-xl bg-slate-900 border border-slate-800 p-3 space-y-2">
+                <p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Estado en tiempo real</p>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div>
+                        <p class="text-[9px] text-slate-500 uppercase">Cuenta regresiva</p>
+                        <p id="statCountdown" class="text-lg font-black text-white mt-0.5">--:--</p>
+                    </div>
+                    <div>
+                        <p class="text-[9px] text-slate-500 uppercase">Bloqueo en</p>
+                        <p id="statLockIn" class="text-lg font-black text-amber-400 mt-0.5">--:--</p>
+                    </div>
+                    <div>
+                        <p class="text-[9px] text-slate-500 uppercase">Estado</p>
+                        <p id="statStatus" class="text-lg font-black text-emerald-400 mt-0.5">–</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Checklist de escenarios -->
+        <section class="rounded-2xl border border-slate-800 bg-slate-900/30 p-4 space-y-3">
+            <h2 class="text-sm font-black text-white uppercase tracking-wider">✅ Escenarios a verificar</h2>
+            <div class="space-y-2 text-xs">
+                <div id="check1" class="flex items-start gap-2 p-2 rounded-lg bg-slate-800/50">
+                    <span class="text-slate-500 mt-0.5 shrink-0">○</span>
+                    <p class="text-slate-300"><strong>Botón activo</strong> — Antes del bloqueo el botón "Pronosticar" está habilitado (amarillo)</p>
+                </div>
+                <div id="check2" class="flex items-start gap-2 p-2 rounded-lg bg-slate-800/50">
+                    <span class="text-slate-500 mt-0.5 shrink-0">○</span>
+                    <p class="text-slate-300"><strong>Auto-lock visual</strong> — Al llegar a la ventana de bloqueo el botón se vuelve gris SIN recargar</p>
+                </div>
+                <div id="check3" class="flex items-start gap-2 p-2 rounded-lg bg-slate-800/50">
+                    <span class="text-slate-500 mt-0.5 shrink-0">○</span>
+                    <p class="text-slate-300"><strong>Podio bloqueado</strong> — El botón "Configurar Podio" desaparece al mismo tiempo</p>
+                </div>
+                <div id="check4" class="flex items-start gap-2 p-2 rounded-lg bg-slate-800/50">
+                    <span class="text-slate-500 mt-0.5 shrink-0">○</span>
+                    <p class="text-slate-300"><strong>Modal bloqueado</strong> — Si presionas "Pronosticar" después del bloqueo aparece alerta de cierre</p>
+                </div>
+                <div id="check5" class="flex items-start gap-2 p-2 rounded-lg bg-slate-800/50">
+                    <span class="text-slate-500 mt-0.5 shrink-0">○</span>
+                    <p class="text-slate-300"><strong>Guardar bloqueado</strong> — Abre el modal ANTES del lock → espera → intenta guardar → debe rechazarse</p>
+                </div>
+                <div id="check6" class="flex items-start gap-2 p-2 rounded-lg bg-slate-800/50">
+                    <span class="text-slate-500 mt-0.5 shrink-0">○</span>
+                    <p class="text-slate-300"><strong>Contador en cero</strong> — Al llegar a 00:00 el fixture se re-renderiza automáticamente</p>
+                </div>
+            </div>
+            <p class="text-[10px] text-slate-600">Marca cada uno manualmente después de verificarlo visualmente en los módulos de abajo.</p>
+        </section>
+
+        <!-- Módulo 1: Fixture / Pronóstico -->
+        <section class="space-y-3">
+            <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider px-1">Módulo 1 · Fixture & Pronóstico</h2>
+            <div id="fixtureTest" class="space-y-3">
+                <p class="text-xs text-slate-600 text-center py-4">Presiona "Iniciar Prueba" para cargar el partido de prueba.</p>
+            </div>
+        </section>
+
+        <!-- Módulo 2: Podio -->
+        <section class="rounded-2xl border border-slate-900 bg-slate-900/40 p-4 space-y-3">
+            <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Módulo 2 · Bloqueo de Podio</h2>
+            <p class="text-xs text-slate-500">El botón debe desaparecer exactamente cuando el partido entre en la ventana de bloqueo.</p>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[10px] text-slate-500 uppercase tracking-wider">Tu podio ideal</p>
+                    <p class="text-sm font-bold text-white mt-0.5" id="podioLabel">Colombia · Brasil · Argentina</p>
+                    <p class="text-xs text-slate-400 mt-0.5" id="podioNota">Puedes editar antes del partido.</p>
+                </div>
+                <button id="btnPodio" onclick="abrirPodioTest()"
+                    class="h-10 px-5 rounded-full bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-bold transition-colors">
+                    Configurar
+                </button>
+            </div>
+        </section>
+
+        <!-- Módulo 3: Log de eventos -->
+        <section class="rounded-2xl border border-slate-800 bg-slate-900/20 p-4 space-y-2">
+            <div class="flex items-center justify-between">
+                <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider">📋 Log de Eventos</h2>
+                <button onclick="clearLog()" class="text-[10px] text-slate-600 hover:text-slate-400">Limpiar</button>
+            </div>
+            <div id="eventLog" class="space-y-1 max-h-48 overflow-y-auto font-mono">
+                <p class="text-[11px] text-slate-600">— Esperando inicio de prueba —</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal Pronóstico Test -->
+    <div id="modalPronostico" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="w-full max-w-sm bg-slate-900 rounded-3xl border border-slate-800 p-6 space-y-5">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-black text-white">Colombia vs Brasil</h3>
+                <button onclick="cerrarModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 font-black">✕</button>
+            </div>
+            <div class="flex items-center justify-center gap-4">
+                <div class="text-center">
+                    <p class="text-xs text-slate-500 mb-2">Colombia</p>
+                    <div id="scoreLocal" class="w-16 h-16 rounded-2xl border-2 border-slate-700 bg-slate-950 flex items-center justify-center text-3xl font-black">0</div>
+                    <div class="flex gap-1 mt-2">
+                        <button onclick="changeScore('local',-1)" class="w-8 h-8 rounded-lg bg-slate-800 text-white font-black text-sm">−</button>
+                        <button onclick="changeScore('local',1)" class="w-8 h-8 rounded-lg bg-slate-800 text-white font-black text-sm">+</button>
+                    </div>
+                </div>
+                <span class="text-slate-600 font-black">vs</span>
+                <div class="text-center">
+                    <p class="text-xs text-slate-500 mb-2">Brasil</p>
+                    <div id="scoreVisitor" class="w-16 h-16 rounded-2xl border-2 border-slate-700 bg-slate-950 flex items-center justify-center text-3xl font-black">0</div>
+                    <div class="flex gap-1 mt-2">
+                        <button onclick="changeScore('visitor',-1)" class="w-8 h-8 rounded-lg bg-slate-800 text-white font-black text-sm">−</button>
+                        <button onclick="changeScore('visitor',1)" class="w-8 h-8 rounded-lg bg-slate-800 text-white font-black text-sm">+</button>
+                    </div>
+                </div>
+            </div>
+            <p id="modalWarning" class="hidden text-xs text-rose-400 text-center font-bold"></p>
+            <button onclick="guardarPronosticoTest()"
+                class="w-full h-12 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm transition-colors">
+                Guardar Pronóstico
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let matchTime = null;
+        let lockSeconds = 60;
+        let tickInterval = null;
+        let autoLockFired = false;
+        let modalOpenedAt = null;
+
+        const PARTIDO_TEST = {
+            id: 'test-001',
+            equipo_local: 'Colombia',
+            equipo_visitante: 'Brasil',
+            fase: 'Grupo A'
+        };
+
+        function log(msg, type = 'info') {
+            const el = document.getElementById('eventLog');
+            const now = new Date().toLocaleTimeString('es-CO');
+            const colors = { info: 'text-slate-400', success: 'text-emerald-400', warning: 'text-amber-400', error: 'text-rose-400', lock: 'text-purple-400' };
+            const icons = { info: '·', success: '✓', warning: '⚠', error: '✗', lock: '🔒' };
+            const line = document.createElement('p');
+            line.className = `text-[11px] ${colors[type] || 'text-slate-400'}`;
+            line.textContent = `[${now}] ${icons[type]} ${msg}`;
+            el.prepend(line);
+        }
+
+        function clearLog() {
+            document.getElementById('eventLog').innerHTML = '<p class="text-[11px] text-slate-600">— Log limpiado —</p>';
+        }
+
+        function fmtSecs(ms) {
+            if (ms <= 0) return '00:00';
+            const s = Math.floor(ms / 1000);
+            const m = Math.floor(s / 60);
+            return `${String(m).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
+        }
+
+        function resetPrueba() {
+            const mins = Math.max(1, parseInt(document.getElementById('inputMinutes').value) || 3);
+            lockSeconds = Math.max(5, parseInt(document.getElementById('inputLock').value) || 60);
+
+            matchTime = new Date(Date.now() + mins * 60000);
+            autoLockFired = false;
+
+            log(`Partido de prueba iniciado. Comienza en ${mins} min. Bloqueo a ${lockSeconds}s antes.`, 'info');
+            log(`Hora del partido: ${matchTime.toLocaleTimeString('es-CO')}`, 'info');
+            log(`Hora de bloqueo:  ${new Date(matchTime.getTime() - lockSeconds * 1000).toLocaleTimeString('es-CO')}`, 'info');
+
+            if (tickInterval) clearInterval(tickInterval);
+            tickInterval = setInterval(tick, 500);
+
+            renderFixtureTest();
+            resetPodio();
+            cerrarModal();
+
+            // Reset checklist
+            ['check1','check2','check3','check4','check5','check6'].forEach(id => {
+                const el = document.getElementById(id);
+                el.classList.remove('bg-emerald-900/40', 'border', 'border-emerald-700/40');
+                el.querySelector('span').textContent = '○';
+                el.querySelector('span').className = 'text-slate-500 mt-0.5 shrink-0';
+            });
+        }
+
+        function tick() {
+            if (!matchTime) return;
+            const now = Date.now();
+            const diffToMatch = matchTime.getTime() - now;
+            const diffToLock = (matchTime.getTime() - lockSeconds * 1000) - now;
+            const isLocked = now >= matchTime.getTime() - lockSeconds * 1000;
+
+            // Update stats
+            document.getElementById('statCountdown').textContent = fmtSecs(diffToMatch);
+            document.getElementById('statLockIn').textContent = diffToLock > 0 ? fmtSecs(diffToLock) : '🔒';
+            const statusEl = document.getElementById('statStatus');
+            if (diffToMatch <= 0) {
+                statusEl.textContent = 'JUGANDO';
+                statusEl.className = 'text-lg font-black text-slate-500 mt-0.5';
+            } else if (isLocked) {
+                statusEl.textContent = 'CERRADO';
+                statusEl.className = 'text-lg font-black text-rose-400 mt-0.5';
+            } else {
+                statusEl.textContent = 'ABIERTO';
+                statusEl.className = 'text-lg font-black text-emerald-400 mt-0.5';
+            }
+
+            // Auto-lock: fires once when entering lock window
+            if (isLocked && !autoLockFired) {
+                autoLockFired = true;
+                log('🔒 Ventana de bloqueo activada — re-renderizando UI...', 'lock');
+                renderFixtureTest();
+                bloquearPodio();
+                markCheck('check2');
+                markCheck('check3');
+            }
+
+            // Match started
+            if (diffToMatch <= 0) {
+                log('⏱ Partido iniciado — contador en cero, re-renderizando.', 'warning');
+                renderFixtureTest();
+                clearInterval(tickInterval);
+                tickInterval = null;
+                markCheck('check6');
+            }
+        }
+
+        function isLocked() {
+            if (!matchTime) return false;
+            return Date.now() >= matchTime.getTime() - lockSeconds * 1000;
+        }
+
+        function renderFixtureTest() {
+            const container = document.getElementById('fixtureTest');
+            const locked = isLocked();
+            const matchStarted = matchTime && Date.now() >= matchTime.getTime();
+
+            if (matchStarted) {
+                container.innerHTML = `
+                    <div class="rounded-2xl border border-slate-800 bg-slate-900/30 p-4 text-center">
+                        <p class="text-sm text-slate-500">El partido ha comenzado. No hay partidos disponibles para apostar.</p>
+                    </div>`;
+                return;
+            }
+
+            const fechaStr = matchTime
+                ? matchTime.toLocaleString('es-CO', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
+                : '--';
+
+            container.innerHTML = `
+                <article class="rounded-2xl border ${locked ? 'border-rose-800/50' : 'border-slate-800'} bg-slate-900/30 p-4 space-y-3 transition-colors">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">GRUPO A · Prueba</span>
+                        <span class="text-[11px] text-slate-400">${fechaStr}</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 flex-1 min-w-0">
+                            <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-lg shrink-0">🇨🇴</div>
+                            <p class="text-sm font-bold text-white">Colombia</p>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <div class="w-12 h-11 rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center text-xl font-black text-slate-600"></div>
+                            <span class="text-[10px] text-slate-600 font-black">vs</span>
+                            <div class="w-12 h-11 rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center text-xl font-black text-slate-600"></div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                            <p class="text-sm font-semibold text-slate-300">Brasil</p>
+                            <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-lg shrink-0">🇧🇷</div>
+                        </div>
+                    </div>
+                    ${locked
+                        ? `<div class="flex justify-end">
+                               <div class="flex items-center gap-2 px-4 h-9 rounded-full bg-slate-800 text-slate-500 text-xs font-bold">
+                                   🔒 Cerrado
+                               </div>
+                           </div>`
+                        : `<div class="flex justify-end">
+                               <button onclick="abrirPronosticoTest()"
+                                   class="h-9 px-5 rounded-full bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-xs font-bold transition-all">
+                                   Pronosticar
+                               </button>
+                           </div>`
+                    }
+                    ${locked ? `<p class="text-[10px] text-rose-400 text-center font-semibold">⚠ Ingreso de pronósticos cerrado</p>` : ''}
+                </article>`;
+
+            if (!locked) markCheck('check1');
+        }
+
+        function abrirPronosticoTest() {
+            if (isLocked()) {
+                log('Intento de abrir modal después del bloqueo → rechazado.', 'lock');
+                alert('🔒 El tiempo límite para este encuentro ya cerró.');
+                markCheck('check4');
+                return;
+            }
+            modalOpenedAt = Date.now();
+            log('Modal abierto correctamente antes del bloqueo.', 'success');
+            document.getElementById('scoreLocal').textContent = '0';
+            document.getElementById('scoreVisitor').textContent = '0';
+            document.getElementById('modalWarning').className = 'hidden';
+            document.getElementById('modalPronostico').classList.remove('hidden');
+            document.getElementById('modalPronostico').classList.add('flex');
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalPronostico').classList.add('hidden');
+            document.getElementById('modalPronostico').classList.remove('flex');
+        }
+
+        function changeScore(side, delta) {
+            const el = document.getElementById(side === 'local' ? 'scoreLocal' : 'scoreVisitor');
+            el.textContent = Math.max(0, Number(el.textContent) + delta);
+        }
+
+        function guardarPronosticoTest() {
+            // Re-check deadline at save time (same logic as polla.html)
+            if (isLocked()) {
+                const warn = document.getElementById('modalWarning');
+                warn.textContent = '🔒 El tiempo límite para este partido ha cerrado.';
+                warn.className = 'text-xs text-rose-400 text-center font-bold';
+                log('Intento de guardar después del bloqueo → rechazado dentro del modal.', 'error');
+                setTimeout(() => cerrarModal(), 1800);
+                renderFixtureTest();
+                markCheck('check5');
+                return;
+            }
+            const gl = document.getElementById('scoreLocal').textContent;
+            const gv = document.getElementById('scoreVisitor').textContent;
+            log(`Pronóstico guardado: Colombia ${gl} – ${gv} Brasil ✓`, 'success');
+            cerrarModal();
+        }
+
+        function resetPodio() {
+            document.getElementById('btnPodio').classList.remove('hidden');
+            document.getElementById('podioNota').textContent = 'Puedes editar antes del partido.';
+            document.getElementById('podioNota').className = 'text-xs text-slate-400 mt-0.5';
+        }
+
+        function bloquearPodio() {
+            document.getElementById('btnPodio').classList.add('hidden');
+            document.getElementById('podioNota').textContent = '🔒 Bloqueado definitivamente.';
+            document.getElementById('podioNota').className = 'text-xs text-rose-400 font-semibold mt-0.5';
+            log('Botón de Podio ocultado automáticamente.', 'lock');
+        }
+
+        function abrirPodioTest() {
+            if (isLocked()) {
+                alert('🔒 El podio está bloqueado. No se puede editar a partir de 1 minuto antes del primer partido.');
+                log('Intento de editar podio después del bloqueo → rechazado.', 'lock');
+                return;
+            }
+            alert('✅ Podio abierto correctamente (simulación). En la app real aquí se abre el modal de podio.');
+            log('Modal de podio abierto correctamente.', 'success');
+        }
+
+        function markCheck(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.add('bg-emerald-900/40', 'border', 'border-emerald-700/40');
+            const icon = el.querySelector('span');
+            icon.textContent = '✓';
+            icon.className = 'text-emerald-400 mt-0.5 shrink-0 font-black';
+        }
+    </script>
+
+</body>
+</html>
