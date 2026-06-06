@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin · Polla Pa'onde Santi</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-950 text-white min-h-screen">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-20 bg-slate-950/95 backdrop-blur-sm border-b border-slate-800 px-4 py-3">
+        <div class="flex items-center justify-between max-w-xl mx-auto">
+            <div>
+                <p class="text-[11px] font-bold text-amber-400 uppercase tracking-widest">Pa'onde Santi · Mundial 2026</p>
+                <h1 class="text-base font-black text-white leading-tight">⚙️ Panel de Administración</h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="window.location.href='polla.html'"
+                    class="h-8 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 text-xs font-semibold transition-colors">
+                    🏠 Home
+                </button>
+                <button onclick="recargarDatos()"
+                    class="h-8 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 text-xs font-semibold transition-colors">
+                    ↻ Recargar
+                </button>
+                <span id="connectionBadge"
+                    class="px-2 py-1 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400">
+                    ...
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-xl mx-auto">
+
+        <!-- Stats -->
+        <div class="px-4 pt-4 pb-2">
+            <div class="grid grid-cols-3 gap-2">
+                <div class="rounded-xl bg-slate-900 border border-slate-800 p-3 text-center">
+                    <p id="statTotal" class="text-2xl font-black text-white">–</p>
+                    <p class="text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">Total</p>
+                </div>
+                <div class="rounded-xl bg-slate-900 border border-slate-800 p-3 text-center">
+                    <p id="statCon" class="text-2xl font-black text-emerald-400">–</p>
+                    <p class="text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">Con resultado</p>
+                </div>
+                <div class="rounded-xl bg-slate-900 border border-slate-800 p-3 text-center">
+                    <p id="statSin" class="text-2xl font-black text-amber-400">–</p>
+                    <p class="text-[10px] text-slate-500 uppercase tracking-wide mt-0.5">Pendientes</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="px-4 py-2">
+            <input id="searchInput" type="search" placeholder="🔍  Buscar por país..."
+                class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors">
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="px-4 py-1 overflow-x-auto">
+            <div id="filterTabs" class="flex gap-2 w-max pb-1"></div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loadingState" class="py-16 text-center">
+            <div class="inline-block w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-sm text-slate-500 mt-3">Cargando partidos...</p>
+        </div>
+
+        <!-- Error -->
+        <div id="errorState" class="py-16 text-center hidden px-8">
+            <p class="text-3xl mb-3">⚠️</p>
+            <p id="errorMsg" class="text-rose-400 text-sm font-semibold mb-4">Error al conectar con la base de datos.</p>
+            <button onclick="recargarDatos()"
+                class="h-10 px-6 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-sm font-semibold">
+                Reintentar
+            </button>
+        </div>
+
+        <!-- Empty -->
+        <div id="emptyState" class="py-16 text-center hidden">
+            <p class="text-3xl mb-2">🏟️</p>
+            <p class="text-slate-500 text-sm">Sin partidos en este filtro.</p>
+        </div>
+
+        <!-- Cards -->
+        <div id="partidosList" class="px-4 pb-24 space-y-3 hidden"></div>
+
+    </div>
+
+    <!-- Toast -->
+    <div id="toast"
+        class="fixed bottom-6 left-4 right-4 max-w-xs mx-auto z-50 px-5 py-3 rounded-2xl text-sm font-semibold text-center shadow-xl pointer-events-none"
+        style="opacity:0; transition: opacity 0.25s ease, transform 0.25s ease; transform: translateY(12px);">
+    </div>
+
+    <script>
+    const SUPABASE_URL = 'https://wpuojiqbgxqdolalzfql.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwdW9qaXFiZ3hxZG9sYWx6ZnFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDA4OTcsImV4cCI6MjA5NjIxNjg5N30.wiTgJrSogrCxDwK3YlP87rPyRUfne8OcSkirtEQQClo';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const PHASES_ORDER = [
+        'Fase de Grupos',
+        'Dieciseisavos',
+        'Octavos de Final',
+        'Cuartos de Final',
+        'Semifinales',
+        'Tercer Puesto',
+        'Final'
+    ];
+    const KNOCKOUT_PHASES = new Set(PHASES_ORDER.slice(1));
+
+    let partidos = [];
+    let equiposMap = new Map();
+    let currentFilter = 'all';
+    let currentSearch = '';
+    let toastTimer = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('searchInput').addEventListener('input', e => {
+            currentSearch = e.target.value;
+            renderPartidos();
+        });
+        initAdmin();
+    });
+
+    async function initAdmin() {
+        setLoading(true);
+        setError(false);
+        try {
+            await Promise.all([cargarEquipos(), cargarPartidos()]);
+            setConnectionBadge(true);
+        } catch (err) {
+            setConnectionBadge(false);
+            setLoading(false);
+            setError(true, err.message);
+            return;
+        }
+        renderStats();
+        renderFilterTabs();
+        renderPartidos();
+        setLoading(false);
+    }
+
+    async function recargarDatos() {
+        await initAdmin();
+    }
+
+    async function cargarEquipos() {
+        const { data, error } = await supabaseClient
+            .from('equipos')
+            .select('nombre, sigla, grupo_inicial');
+        if (error) throw error;
+        equiposMap = new Map((data || []).map(e => [e.nombre, e]));
+    }
+
+    async function cargarPartidos() {
+        const { data, error } = await supabaseClient
+            .from('partidos')
+            .select('*')
+            .order('fecha_hora', { ascending: true });
+        if (error) throw error;
+        partidos = data || [];
+    }
+
+    function getSigla(nombre) {
+        return equiposMap.get(nombre)?.sigla ?? null;
+    }
+
+    function isKnockout(fase) {
+        return KNOCKOUT_PHASES.has(fase);
+    }
+
+    function formatDate(fechaHora) {
+        try {
+            return new Date(fechaHora).toLocaleString('es-CO', {
+                day: '2-digit', month: 'short',
+                hour: '2-digit', minute: '2-digit',
+                timeZone: 'America/Bogota'
+            });
+        } catch {
+            return fechaHora;
+        }
+    }
+
+    function renderStats() {
+        const con = partidos.filter(p => p.goles_local_real !== null && p.goles_local_real !== undefined).length;
+        document.getElementById('statTotal').textContent = partidos.length;
+        document.getElementById('statCon').textContent = con;
+        document.getElementById('statSin').textContent = partidos.length - con;
+    }
+
+    function renderFilterTabs() {
+        const tabs = document.getElementById('filterTabs');
+        const filters = [
+            { key: 'all', label: 'Todos' },
+            { key: 'Fase de Grupos', label: 'Grupos' },
+            ...PHASES_ORDER.slice(1).map(p => ({ key: p, label: p }))
+        ];
+        tabs.innerHTML = filters.map(({ key, label }) => `
+            <button onclick="setFilter('${escapeHTML(key)}')"
+                class="shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-colors whitespace-nowrap
+                    ${currentFilter === key
+                        ? 'bg-amber-500 text-slate-950'
+                        : 'bg-slate-800 text-slate-400 active:bg-slate-700 hover:bg-slate-700'}">
+                ${escapeHTML(label)}
+            </button>
+        `).join('');
+    }
+
+    function setFilter(key) {
+        currentFilter = key;
+        renderFilterTabs();
+        renderPartidos();
+    }
+
+    function renderPartidos() {
+        const q = currentSearch.toLowerCase().trim();
+        const filtered = partidos.filter(p => {
+            const matchPhase = currentFilter === 'all' || p.fase === currentFilter;
+            const matchSearch = !q
+                || (p.equipo_local || '').toLowerCase().includes(q)
+                || (p.equipo_visitante || '').toLowerCase().includes(q);
+            return matchPhase && matchSearch;
+        });
+
+        const list = document.getElementById('partidosList');
+        const empty = document.getElementById('emptyState');
+
+        if (!filtered.length) {
+            list.classList.add('hidden');
+            empty.classList.remove('hidden');
+            return;
+        }
+        list.classList.remove('hidden');
+        empty.classList.add('hidden');
+        list.innerHTML = filtered.map(buildCard).join('');
+    }
+
+    function buildCard(p) {
+        const siglaL = getSigla(p.equipo_local);
+        const siglaR = getSigla(p.equipo_visitante);
+        const knockout = isKnockout(p.fase);
+        const hasResult = p.goles_local_real !== null && p.goles_local_real !== undefined;
+
+        const borderColor = hasResult ? 'border-emerald-800/50' : 'border-slate-800';
+        const phasePill = knockout
+            ? 'bg-purple-900/40 text-purple-300 border border-purple-700/40'
+            : 'bg-slate-800/80 text-slate-400';
+
+        const recordatorioBlock = !hasResult ? `
+            <div class="mt-3 pt-3 border-t border-slate-800/60">
+                <button onclick="abrirModalRecordatorio('${escapeAttr(String(p.id))}')"
+                    class="w-full flex items-center justify-center gap-2 h-9 rounded-xl bg-green-900/30 hover:bg-green-900/50 border border-green-800/50 text-green-400 text-xs font-semibold transition-colors active:scale-95">
+                    📲 Recordar clientes sin pronóstico
+                </button>
+            </div>
+        ` : '';
+
+        const teamsBlock = knockout ? `
+            <div class="mb-4 rounded-xl bg-slate-950/70 border border-amber-500/25 p-3">
+                <p class="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-2">
+                    ✏️ Clasificados — editar nombres
+                </p>
+                <div class="space-y-2">
+                    <div>
+                        <label class="text-[10px] text-slate-500 uppercase tracking-wide mb-1 block">Local</label>
+                        <input type="text" id="name-local-${p.id}"
+                            value="${escapeAttr(p.equipo_local)}"
+                            placeholder="Equipo local"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none transition-colors">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-500 uppercase tracking-wide mb-1 block">Visitante</label>
+                        <input type="text" id="name-visit-${p.id}"
+                            value="${escapeAttr(p.equipo_visitante)}"
+                            placeholder="Equipo visitante"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none transition-colors">
+                    </div>
+                    <button id="btn-teams-${p.id}" onclick="actualizarEquipos('${p.id}')"
+                        class="w-full h-11 rounded-xl border border-amber-500/40 text-amber-400 text-sm font-semibold active:bg-amber-500/20 hover:bg-amber-500/10 transition-colors">
+                        Actualizar Equipos
+                    </button>
+                </div>
+            </div>
+        ` : '';
+
+        const resultBadge = hasResult ? `
+            <div class="flex justify-center mb-3">
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 bg-emerald-900/30 border border-emerald-700/40 px-3 py-1.5 rounded-full">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+                    Guardado: ${p.goles_local_real} – ${p.goles_visitante_real}
+                </span>
+            </div>
+        ` : '';
+
+        return `
+        <article id="card-${p.id}" class="rounded-2xl border ${borderColor} bg-slate-900/40 p-4 transition-colors">
+
+            <div class="flex items-center justify-between gap-2 mb-3">
+                <span class="text-xs font-black text-amber-400 shrink-0">#${p.orden_torneo ?? p.id}</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full truncate max-w-[140px] ${phasePill}">
+                    ${escapeHTML(p.fase)}
+                </span>
+                <span class="text-[10px] text-slate-500 shrink-0">${formatDate(p.fecha_hora)}</span>
+            </div>
+
+            <div class="flex items-center gap-3 mb-4">
+                <div class="flex-1 min-w-0">
+                    <p class="font-bold text-white text-sm truncate">${escapeHTML(p.equipo_local)}</p>
+                    ${siglaL
+                        ? `<p class="text-[11px] text-amber-400 font-mono font-bold tracking-wider">${siglaL}</p>`
+                        : `<p class="text-[11px] text-slate-600 italic">sin sigla</p>`}
+                </div>
+                <span class="text-slate-700 text-xs font-black shrink-0">vs</span>
+                <div class="flex-1 min-w-0 text-right">
+                    <p class="font-bold text-white text-sm truncate">${escapeHTML(p.equipo_visitante)}</p>
+                    ${siglaR
+                        ? `<p class="text-[11px] text-amber-400 font-mono font-bold tracking-wider">${siglaR}</p>`
+                        : `<p class="text-[11px] text-slate-600 italic">sin sigla</p>`}
+                </div>
+            </div>
+
+            ${teamsBlock}
+            ${resultBadge}
+
+            <div class="flex items-center gap-2">
+                <div class="flex-1 min-w-0">
+                    <label class="text-[10px] text-slate-500 uppercase tracking-wide mb-1 block text-center">Local</label>
+                    <input id="local-${p.id}" type="number" inputmode="numeric" min="0" max="99"
+                        value="${p.goles_local_real ?? ''}" placeholder="–"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl text-center text-3xl font-black text-white py-3 focus:border-amber-500 focus:outline-none transition-colors">
+                </div>
+                <span class="text-slate-600 font-black text-xl shrink-0 mt-5">–</span>
+                <div class="flex-1 min-w-0">
+                    <label class="text-[10px] text-slate-500 uppercase tracking-wide mb-1 block text-center">Visitante</label>
+                    <input id="visit-${p.id}" type="number" inputmode="numeric" min="0" max="99"
+                        value="${p.goles_visitante_real ?? ''}" placeholder="–"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-xl text-center text-3xl font-black text-white py-3 focus:border-amber-500 focus:outline-none transition-colors">
+                </div>
+                <div class="shrink-0 mt-5">
+                    <button id="btn-save-${p.id}" onclick="guardarResultado('${p.id}')"
+                        class="w-14 h-14 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 active:bg-amber-300 text-slate-950 font-black text-xl transition-all">
+                        💾
+                    </button>
+                </div>
+            </div>
+
+            ${recordatorioBlock}
+        </article>`;
+    }
+
+    async function guardarResultado(partidoId) {
+        const localInput = document.getElementById(`local-${partidoId}`);
+        const visitInput = document.getElementById(`visit-${partidoId}`);
+        const btn = document.getElementById(`btn-save-${partidoId}`);
+
+        const localVal = localInput.value.trim();
+        const visitVal = visitInput.value.trim();
+
+        if (localVal === '' || visitVal === '') {
+            showToast('Ingresa ambos marcadores', 'error');
+            return;
+        }
+        const gl = parseInt(localVal, 10);
+        const gv = parseInt(visitVal, 10);
+        if (isNaN(gl) || isNaN(gv) || gl < 0 || gv < 0) {
+            showToast('Marcadores inválidos', 'error');
+            return;
+        }
+
+        btn.textContent = '⏳';
+        btn.disabled = true;
+
+        try {
+            const { error } = await supabaseClient
+                .from('partidos')
+                .update({ goles_local_real: gl, goles_visitante_real: gv })
+                .eq('id', partidoId);
+            if (error) throw error;
+
+            // Calificar todos los pronósticos de este partido vía RPC
+            const { data: rpcData, error: rpcError } = await supabaseClient
+                .rpc('procesar_puntos_partido', {
+                    p_partido_id: partidoId,
+                    p_goles_local_real: gl,
+                    p_goles_visitante_real: gv
+                });
+
+            const idx = partidos.findIndex(p => p.id === partidoId);
+            if (idx !== -1) {
+                partidos[idx].goles_local_real = gl;
+                partidos[idx].goles_visitante_real = gv;
+            }
+
+            const card = document.getElementById(`card-${partidoId}`);
+            if (card) {
+                card.className = card.className
+                    .replace('border-slate-800', 'border-emerald-800/50');
+            }
+
+            renderStats();
+
+            if (rpcError) {
+                console.error('RPC procesar_puntos_partido:', rpcError);
+                showToast(`✓ ${gl}–${gv} guardado. Aviso: no se procesaron puntos (${rpcError.message}).`, 'error');
+            } else {
+                const rows = Array.isArray(rpcData) ? rpcData : (rpcData != null ? [rpcData] : []);
+                const procesados = rows[0]?.pronosticos_procesados ?? rows[0]?.updated ?? null;
+                const premios = rows[0]?.premios_otorgados ?? rows[0]?.prizes ?? null;
+                let msg = `✓ ${gl}–${gv} guardado y puntos procesados`;
+                if (procesados !== null) msg += ` · ${procesados} pronóstico${procesados !== 1 ? 's' : ''} calificado${procesados !== 1 ? 's' : ''}`;
+                if (premios !== null) msg += ` · ${premios} premio${premios !== 1 ? 's' : ''} otorgado${premios !== 1 ? 's' : ''}`;
+                showToast(msg, 'success');
+            }
+        } catch (err) {
+            console.error('guardarResultado:', err);
+            showToast(friendlyError(err), 'error');
+        } finally {
+            btn.textContent = '💾';
+            btn.disabled = false;
+        }
+    }
+
+    async function actualizarEquipos(partidoId) {
+        const localInput = document.getElementById(`name-local-${partidoId}`);
+        const visitInput = document.getElementById(`name-visit-${partidoId}`);
+        const btn = document.getElementById(`btn-teams-${partidoId}`);
+
+        const newLocal = localInput.value.trim();
+        const newVisit = visitInput.value.trim();
+
+        if (!newLocal || !newVisit) {
+            showToast('Los nombres no pueden estar vacíos', 'error');
+            return;
+        }
+
+        btn.textContent = '⏳ Guardando...';
+        btn.disabled = true;
+
+        try {
+            const { error } = await supabaseClient
+                .from('partidos')
+                .update({ equipo_local: newLocal, equipo_visitante: newVisit })
+                .eq('id', partidoId);
+            if (error) throw error;
+
+            const idx = partidos.findIndex(p => p.id === partidoId);
+            if (idx !== -1) {
+                partidos[idx].equipo_local = newLocal;
+                partidos[idx].equipo_visitante = newVisit;
+            }
+
+            showToast(`✓ Equipos actualizados`, 'success');
+            renderPartidos();
+        } catch (err) {
+            console.error('actualizarEquipos:', err);
+            showToast(friendlyError(err), 'error');
+            btn.textContent = 'Actualizar Equipos';
+            btn.disabled = false;
+        }
+    }
+
+    function friendlyError(err) {
+        const msg = err?.message || String(err);
+        if (msg.includes('foreign key') || msg.includes('violates')) {
+            return 'El nombre no coincide con ningún equipo registrado. Verifica la ortografía exacta.';
+        }
+        if (msg.includes('network') || msg.includes('fetch')) {
+            return 'Sin conexión. Verifica tu red.';
+        }
+        return msg.length > 80 ? 'Error al guardar. Revisa la consola.' : msg;
+    }
+
+    function showToast(msg, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.style.background = type === 'success' ? '#10b981' : '#ef4444';
+        toast.style.color = '#fff';
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(12px)';
+        }, 3000);
+    }
+
+    function setConnectionBadge(ok) {
+        const el = document.getElementById('connectionBadge');
+        el.textContent = ok ? '● Online' : '● Offline';
+        el.className = `px-2 py-1 rounded-full text-[10px] font-bold ${
+            ok ? 'bg-emerald-900/50 text-emerald-400' : 'bg-rose-900/50 text-rose-400'
+        }`;
+    }
+
+    function setLoading(show) {
+        document.getElementById('loadingState').classList.toggle('hidden', !show);
+        if (show) {
+            document.getElementById('partidosList').classList.add('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+        }
+    }
+
+    function setError(show, msg = '') {
+        const el = document.getElementById('errorState');
+        el.classList.toggle('hidden', !show);
+        if (show && msg) document.getElementById('errorMsg').textContent = msg;
+    }
+
+    function escapeHTML(str) {
+        return String(str ?? '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function escapeAttr(str) {
+        return String(str ?? '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // ── WhatsApp Reminders ──────────────────────────────────────────────
+
+    const MENSAJES_WA = [
+        (nombre, local, visitante, url) =>
+            `¡Hola, ${nombre}! ⚽ En Pa'onde Santi nos preocupa que te quedes sin tus 12 puntos. Te falta registrar tu pronóstico para el partidazo *${local} vs ${visitante}*. ¡Entra ya a la app antes de que se cierre el ingreso y asegura tu fría o tu bono! 🍔🍺 ${url}`,
+        (nombre, local, visitante, url) =>
+            `¡Ey, ${nombre}! 🏃‍♂️💨 El balón ya casi rueda para el partido *${local} vs ${visitante}* y tu marcador sigue en blanco. Entra a la polla, deja tu apuesta y aprovecha para pedirte algo delicioso hoy en Pa'onde Santi. ¡No dejes que otros se lleven los premios! 🍟🥤 ${url}`,
+        (nombre, local, visitante, url) =>
+            `¡🚨 ALERTA MUNDIALISTA, ${nombre}! Se te está pasando el tiempo para el partido *${local} vs ${visitante}*. Recuerda que si le pegas al marcador exacto te ganas premios inmediatos en tu próxima compra en el local. ¡Haz tu jugada aquí! 🎯 ${url}`
+    ];
+
+    function getMensajeWA(nombre, local, visitante) {
+        const appUrl = window.location.href.replace('paondesanti-admin.html', 'polla.html');
+        const idx = Math.floor(Math.random() * MENSAJES_WA.length);
+        return MENSAJES_WA[idx](nombre, local, visitante, appUrl);
+    }
+
+    function formatCelular(raw) {
+        const digits = String(raw ?? '').replace(/\D/g, '');
+        if (!digits) return null;
+        if (digits.startsWith('57') && digits.length >= 12) return digits;
+        if (digits.length === 10 && digits.startsWith('3')) return '57' + digits;
+        return digits.length >= 7 ? '57' + digits : null;
+    }
+
+    async function abrirModalRecordatorio(partidoId) {
+        const partido = partidos.find(p => String(p.id) === String(partidoId));
+        if (!partido) return;
+
+        const modal = document.getElementById('modalRecordatorio');
+        const title = document.getElementById('modalRecordatorioTitle');
+        const body = document.getElementById('modalRecordatorioBody');
+
+        title.textContent = `${partido.equipo_local} vs ${partido.equipo_visitante}`;
+        body.innerHTML = '<p class="text-xs text-slate-500 text-center py-8">Consultando base de datos...</p>';
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        try {
+            const [{ data: pronData, error: e1 }, { data: clientesData, error: e2 }] = await Promise.all([
+                supabaseClient.from('pronosticos').select('cliente_id').eq('partido_id', partidoId),
+                supabaseClient.from('clientes').select('id, nombres_apellidos, celular')
+            ]);
+            if (e1) throw e1;
+            if (e2) throw e2;
+
+            const yaApuestaron = new Set((pronData || []).map(r => String(r.cliente_id)));
+            const sinApuesta = (clientesData || []).filter(c => !yaApuestaron.has(String(c.id)));
+
+            if (!sinApuesta.length) {
+                body.innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-3xl mb-2">🎉</p>
+                        <p class="text-sm font-bold text-emerald-400">¡Todos los clientes ya tienen su pronóstico registrado!</p>
+                    </div>`;
+                return;
+            }
+
+            body.innerHTML = `
+                <p class="text-[10px] text-slate-500 uppercase tracking-wider mb-3 font-bold">
+                    ${sinApuesta.length} cliente${sinApuesta.length !== 1 ? 's' : ''} sin pronóstico
+                </p>
+                <div class="space-y-2">
+                    ${sinApuesta.map(c => {
+                        const tel = formatCelular(c.celular);
+                        const btnWA = tel
+                            ? `<button onclick="enviarWhatsApp('${escapeAttr(c.nombres_apellidos)}','${tel}','${escapeAttr(partido.equipo_local)}','${escapeAttr(partido.equipo_visitante)}')"
+                                class="shrink-0 h-9 px-3 rounded-xl bg-green-600 hover:bg-green-500 active:scale-95 text-white text-xs font-bold transition-all">
+                                📲 Enviar
+                               </button>`
+                            : `<span class="shrink-0 text-[10px] text-slate-600 italic px-2">Sin celular</span>`;
+                        return `
+                        <div class="flex items-center justify-between gap-3 bg-slate-800/50 rounded-xl px-3 py-2.5">
+                            <p class="text-sm text-white font-semibold truncate min-w-0">${escapeHTML(c.nombres_apellidos)}</p>
+                            ${btnWA}
+                        </div>`;
+                    }).join('')}
+                </div>`;
+        } catch (err) {
+            body.innerHTML = `<p class="text-xs text-rose-400 text-center py-4">${escapeHTML(err.message)}</p>`;
+        }
+    }
+
+    function cerrarModalRecordatorio() {
+        const modal = document.getElementById('modalRecordatorio');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function enviarWhatsApp(nombre, celular, local, visitante) {
+        const mensaje = getMensajeWA(nombre, local, visitante);
+        const url = `https://wa.me/${celular}?text=${encodeURIComponent(mensaje)}`;
+        window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    </script>
+
+    <!-- Modal: Recordatorio WhatsApp -->
+    <div id="modalRecordatorio"
+        class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm px-4"
+        onclick="if(event.target===this)cerrarModalRecordatorio()">
+        <div class="w-full max-w-sm bg-slate-900 rounded-3xl border border-slate-700 shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+                <div>
+                    <p class="text-[10px] font-bold text-green-400 uppercase tracking-widest">📲 WhatsApp · Recordatorio</p>
+                    <h3 id="modalRecordatorioTitle" class="text-sm font-black text-white mt-0.5">Partido</h3>
+                </div>
+                <button onclick="cerrarModalRecordatorio()"
+                    class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 text-lg font-black flex items-center justify-center transition-colors">
+                    ×
+                </button>
+            </div>
+            <div id="modalRecordatorioBody" class="p-4 max-h-[55vh] overflow-y-auto">
+                <p class="text-xs text-slate-500 text-center py-6">Cargando...</p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

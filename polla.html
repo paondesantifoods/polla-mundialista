@@ -1,0 +1,1234 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pa'onde Santi - Polla Mundialista</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-slate-950">
+
+    <header class="sticky top-0 z-40 border-b border-slate-900 bg-slate-950/90 backdrop-blur-md">
+        <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4">
+            <div class="flex items-center gap-3">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-12 w-12">
+                    <rect width="48" height="48" rx="10" fill="#FFC107" />
+                    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="18" fill="#111">PS</text>
+                </svg>
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.25em] text-[#FFC107]">Polla Mundialista</p>
+                    <h1 class="text-xl font-black text-white tracking-tight">Pa'onde Santi</h1>
+                    <p class="text-xs text-slate-400 font-medium" id="userStatus">Cargando sesión...</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="irAlAdmin()" title="Administrar"
+                    class="w-9 h-9 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-500 hover:text-slate-300 text-base flex items-center justify-center transition-colors cursor-pointer">
+                    ⚙️
+                </button>
+                <button id="sessionButton" class="h-10 rounded-full px-5 text-sm font-bold text-white shadow-lg shadow-emerald-950/50 cursor-pointer transition active:scale-95" style="background-color:#00A651">Ingresar</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="mx-auto max-w-5xl px-4 py-6 space-y-6">
+        
+        <section class="grid gap-4 md:grid-cols-2">
+            <article class="rounded-3xl border border-slate-900 bg-slate-900/40 p-5 backdrop-blur-sm flex flex-col justify-between gap-4">
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">El Torneo Comienza En</p>
+                    <h2 class="mt-1 text-lg font-extrabold text-white">Próximo gran pitazo</h2>
+                </div>
+                <div class="grid grid-cols-4 gap-2 text-center">
+                    <div class="rounded-2xl bg-slate-950/80 border border-slate-900/60 p-2">
+                        <span class="block text-2xl font-black text-[#FFC107]" id="timerDays">--</span>
+                        <span class="block text-[9px] uppercase tracking-wider text-slate-400 font-medium">Días</span>
+                    </div>
+                    <div class="rounded-2xl bg-slate-950/80 border border-slate-900/60 p-2">
+                        <span class="block text-2xl font-black text-white" id="timerHours">--</span>
+                        <span class="block text-[9px] uppercase tracking-wider text-slate-400 font-medium">Horas</span>
+                    </div>
+                    <div class="rounded-2xl bg-slate-950/80 border border-slate-900/60 p-2">
+                        <span class="block text-2xl font-black text-white" id="timerMinutes">--</span>
+                        <span class="block text-[9px] uppercase tracking-wider text-slate-400 font-medium">Min</span>
+                    </div>
+                    <div class="rounded-2xl bg-slate-950/80 border border-slate-900/60 p-2">
+                        <span class="block text-2xl font-black text-white" id="timerSeconds">--</span>
+                        <span class="block text-[9px] uppercase tracking-wider text-slate-400 font-medium">Seg</span>
+                    </div>
+                </div>
+            </article>
+
+            <article class="rounded-3xl border border-slate-900 bg-slate-900/40 p-5 backdrop-blur-sm flex items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tu Podio Ideal</p>
+                    <h2 class="text-xl font-extrabold text-white" id="podioResumen">Aún no configurado</h2>
+                    <p class="text-xs text-slate-400 leading-relaxed" id="podioNota">Modifícalo libremente antes del debut del torneo.</p>
+                </div>
+                <button id="openPodioButton" class="h-11 rounded-full bg-sky-500 hover:bg-sky-400 text-slate-950 px-5 text-sm font-bold shadow-lg shadow-sky-950/40 cursor-pointer transition active:scale-95">Configurar</button>
+            </article>
+        </section>
+
+        <nav class="flex gap-2 border-b border-slate-900 pb-2 overflow-x-auto scrollbar-none">
+            <button id="tabPronosticos" class="rounded-full bg-amber-500 px-6 py-2.5 text-sm font-bold text-slate-950 cursor-pointer transition">Pronósticos</button>
+            <button id="tabRanking" class="rounded-full bg-slate-900 hover:bg-slate-800 px-6 py-2.5 text-sm font-bold text-slate-300 cursor-pointer transition">Ranking</button>
+            <button id="tabReglamento" class="rounded-full bg-slate-900 hover:bg-slate-800 px-6 py-2.5 text-sm font-bold text-slate-300 cursor-pointer transition">Reglamento</button>
+        </nav>
+
+        <section id="contentPronosticos" class="space-y-5">
+            <div class="rounded-3xl border border-amber-500/20 bg-amber-500/5 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="space-y-1">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-amber-400">Próximo partido sin pronóstico</p>
+                    <h2 class="text-lg font-extrabold text-white" id="pendingTitle">Cargando partido...</h2>
+                    <p class="text-xs text-slate-400" id="pendingSubtitle">Asegura tus puntos antes del cierre de plataforma.</p>
+                </div>
+                <button id="actionPending" class="h-12 rounded-full bg-amber-500 hover:bg-amber-400 px-6 text-sm font-bold text-slate-950 cursor-pointer transition shadow-lg shadow-amber-950/50 active:scale-95">Pronosticar ya</button>
+            </div>
+
+            <div class="flex gap-2">
+                <button id="filterUpcoming" class="flex-1 rounded-full border border-slate-800 bg-amber-500 text-slate-950 px-4 py-2.5 text-xs font-bold transition cursor-pointer">Todos los disponibles</button>
+                <button id="filterPending" class="flex-1 rounded-full border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 px-4 py-2.5 text-xs font-bold transition cursor-pointer">Solo pendientes</button>
+            </div>
+
+            <!-- Premios instantáneos ganados por marcador exacto -->
+            <div id="premiosSection" class="hidden space-y-3">
+                <div class="px-1 flex items-center gap-2">
+                    <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">Premios Ganados</h3>
+                    <span id="premiosBadge" class="text-[10px] font-black bg-emerald-500 text-slate-950 rounded-full px-2 py-0.5">0</span>
+                </div>
+                <div id="premiosCards" class="grid gap-3 sm:grid-cols-2"></div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="px-1">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Fixture Oficial</h3>
+                </div>
+                <div id="fixtureCards" class="grid gap-3 sm:grid-cols-2"></div>
+            </div>
+        </section>
+
+        <section id="contentRanking" class="hidden space-y-5">
+            <div id="userBanner" class="rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/30 to-slate-900/60 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Tu Rendimiento Global</p>
+                    <h2 id="userPositionText" class="mt-1 text-4xl font-black text-white">#--</h2>
+                    <p id="userPointsText" class="text-sm font-semibold text-emerald-200 mt-1">Puntos acumulados: --</p>
+                </div>
+                <div class="flex gap-3 w-full sm:w-auto">
+                    <div class="flex-1 sm:flex-none rounded-2xl bg-slate-950/80 border border-slate-900 px-4 py-3 text-center min-w-[90px]">
+                        <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Exactos</p>
+                        <span id="userExactosCount" class="block text-xl font-black text-emerald-400 mt-1">--</span>
+                    </div>
+                    <div class="flex-1 sm:flex-none rounded-2xl bg-slate-950/80 border border-slate-900 px-4 py-3 text-center min-w-[90px]">
+                        <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Positivos</p>
+                        <span id="userPositivosCount" class="block text-xl font-black text-sky-400 mt-1">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-3xl border border-slate-900 bg-slate-900/20 p-4 space-y-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-base font-bold text-white">Tabla General de Clasificación</h2>
+                        <p class="text-xs text-slate-400">Haz clic en cualquier competidor para ver el desglose de su juego.</p>
+                    </div>
+                    <a href="https://www.fifa.com/es/tournaments/mens/worldcup/canadamexicousa2026/standings"
+                        target="_blank" rel="noopener noreferrer"
+                        class="shrink-0 flex items-center gap-1.5 px-3 h-8 rounded-full bg-sky-950/60 border border-sky-800/40 text-sky-400 text-[11px] font-bold hover:bg-sky-900/50 transition-colors whitespace-nowrap">
+                        🌐 FIFA
+                    </a>
+                </div>
+                <div id="rankingList" class="grid gap-2"></div>
+            </div>
+        </section>
+
+        <section id="contentReglamento" class="hidden space-y-4">
+            <div class="rounded-3xl border border-slate-900 bg-slate-900/40 p-5 flex items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-[#FFC107]">Reglas de Juego</p>
+                    <h2 class="text-lg font-bold text-white">¿Cómo sumar puntos y reclamar premios?</h2>
+                </div>
+            </div>
+
+            <div class="space-y-2.5">
+                <details class="group rounded-2xl border border-slate-900 bg-slate-900/20 p-4" open>
+                    <summary class="flex items-center justify-between cursor-pointer list-none">
+                        <div>
+                            <p class="text-sm font-bold text-white">¿Cómo activar tu cuenta de juego?</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Activa con tus platos favoritos</p>
+                        </div>
+                        <span class="text-sm font-bold text-amber-500 transition-transform group-open:rotate-90">➔</span>
+                    </summary>
+                    <div class="mt-3 text-xs text-slate-300 leading-relaxed space-y-2 border-t border-slate-900 pt-3">
+                        <p>Para activar tu usuario y poder registrar pronósticos debes realizar una compra mínima o adquirir uno de los <strong>Combos Mundialistas</strong> en el punto de venta o por domicilios.</p>
+                        <p>Cada pedido válido generará un código de activación o habilitará el número de celular registrado. Presenta tu comprobante en el local si tienes dudas.</p>
+                    </div>
+                </details>
+
+                <details class="group rounded-2xl border border-slate-900 bg-slate-900/20 p-4">
+                    <summary class="flex items-center justify-between cursor-pointer list-none">
+                        <div>
+                            <p class="text-sm font-bold text-white">Sistema Maestro de Puntuación</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Cómo se otorgan los puntos por partido</p>
+                        </div>
+                        <span class="text-sm font-bold text-amber-500 transition-transform group-open:rotate-90">➔</span>
+                    </summary>
+                    <div class="mt-3 text-xs text-slate-300 leading-relaxed space-y-2 border-t border-slate-900 pt-3">
+                        <p><span class="font-bold text-[#FFC107]">12 Pts</span> – Marcador exacto (ej: pronóstico 2-1, real 2-1).</p>
+                        <p><span class="font-bold text-[#FFC107]">8 Pts</span> – Resultado cercano: ganador correcto y misma diferencia de goles, o empate correcto.</p>
+                        <p><span class="font-bold text-[#FFC107]">5 Pts</span> – Ganador correcto pero con diferencia de goles errada.</p>
+                        <p><span class="font-bold text-[#FFC107]">2 Pts</span> – Gol exacto de un solo equipo.</p>
+                        <p><span class="font-bold text-rose-400">0 Pts</span> – Pronóstico incorrecto.</p>
+                        <p class="mt-2 text-slate-400">Los puntos se calculan sobre el resultado final reglamentario (90' + alargue). Las tandas de penales no cuentan para el marcador, solo para definir la clasificación en eliminatorias.</p>
+                        <p class="mt-1 text-[#00A651] font-semibold">Bonus +3 Pts – En eliminatorias, si el partido se define por penales, se otorgan +3 puntos si acertaste qué equipo clasificaba.</p>
+                    </div>
+                </details>
+
+                <details class="group rounded-2xl border border-slate-900 bg-slate-900/20 p-4">
+                    <summary class="flex items-center justify-between cursor-pointer list-none">
+                        <div>
+                            <p class="text-sm font-bold text-white">Puntos del Podio de la "Final Soñada"</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Puntaje extra al finalizar el campeonato</p>
+                        </div>
+                        <span class="text-sm font-bold text-amber-500 transition-transform group-open:rotate-90">➔</span>
+                    </summary>
+                    <div class="mt-3 text-xs text-slate-300 leading-relaxed space-y-1.5 border-t border-slate-900 pt-3">
+                        <p>Los puntos del podio se sumarán automáticamente a la tabla global una vez finalizado el torneo:</p>
+                        <p>• <span class="font-bold text-[#FFC107]">Campeón:</span> 20 pts</p>
+                        <p>• <span class="font-bold text-[#FFC107]">Subcampeón:</span> 10 pts</p>
+                        <p>• <span class="font-bold text-[#FFC107]">Tercer puesto:</span> 6 pts</p>
+                        <p class="mt-2 text-slate-400">El podio se bloqueará para edición exactamente 1 minuto antes del pitazo inicial del primer partido del torneo.</p>
+                    </div>
+                </details>
+
+                <details class="group rounded-2xl border border-slate-900 bg-slate-900/20 p-4">
+                    <summary class="flex items-center justify-between cursor-pointer list-none">
+                        <div>
+                            <p class="text-sm font-bold text-white">Premios, Recompensas e Incentivos</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Premios parciales y premios mayores</p>
+                        </div>
+                        <span class="text-sm font-bold text-amber-500 transition-transform group-open:rotate-90">➔</span>
+                    </summary>
+                    <div class="mt-3 text-xs text-slate-300 leading-relaxed space-y-2 border-t border-slate-900 pt-3">
+                        <p><strong>Rey del Marcador Exacto:</strong> Los participantes que consigan la mayor cantidad de aciertos exactos (12 pts) ganarán combos automáticos en el punto físico (Hamburguesa o Perro con papas).</p>
+                        <p class="font-bold text-white">Grandes Premios del Podio Final:</p>
+                        <p>🥇 <strong>1er Puesto:</strong> Premio en efectivo acumulado + mega bote de productos gratis por un mes completo.</p>
+                        <p>🥈 <strong>2do Puesto:</strong> Bono VIP de consumo libre en nuestro restaurante.</p>
+                        <p>🥉 <strong>3er Puesto:</strong> Combo Familiar Especial Pa'onde Santi.</p>
+                        <p class="text-[10px] text-slate-500 mt-2">Sujeto a verificación y presentación de comprobantes de facturación física o virtual autorizada.</p>
+                    </div>
+                </details>
+
+                <a href="https://www.fifa.com/es/tournaments/mens/worldcup/canadamexicousa2026/standings"
+                    target="_blank" rel="noopener noreferrer"
+                    class="flex items-center justify-between gap-4 rounded-2xl border border-sky-800/40 bg-sky-950/30 p-4 transition-colors hover:bg-sky-950/50 active:scale-[0.98]">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-xl bg-sky-900/60 flex items-center justify-center text-xl shrink-0">🌐</div>
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold text-white leading-tight">Tabla oficial de la FIFA</p>
+                            <p class="text-[11px] text-sky-400 mt-0.5 truncate">Posiciones, puntos y eliminatorias en vivo</p>
+                        </div>
+                    </div>
+                    <span class="text-sky-400 text-lg shrink-0">↗</span>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <div id="modalPlayerDetail" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+        <div class="w-full max-w-sm rounded-3xl bg-slate-900 border border-slate-800 p-6 shadow-2xl space-y-5">
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div id="playerDetailAvatar" class="h-12 w-12 flex items-center justify-center rounded-full text-base font-black text-white">--</div>
+                    <div>
+                        <h2 id="playerDetailName" class="text-base font-bold text-white">--</h2>
+                        <p id="playerDetailPosition" class="text-xs text-slate-400">Posición --</p>
+                    </div>
+                </div>
+                <button id="closePlayerModal" class="rounded-full bg-slate-800 hover:bg-slate-700 h-8 w-8 text-xs text-slate-300 cursor-pointer">✕</button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="rounded-2xl bg-slate-950 p-4 border border-slate-800/60 text-center">
+                    <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Marcadores Exactos</p>
+                    <span id="playerDetailExactos" class="block text-2xl font-black text-emerald-400 mt-2">--</span>
+                </div>
+                <div class="rounded-2xl bg-slate-950 p-4 border border-slate-800/60 text-center">
+                    <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Aciertos Totales</p>
+                    <span id="playerDetailPositivos" class="block text-2xl font-black text-sky-400 mt-2">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalPodio" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+        <div class="w-full max-w-md rounded-3xl bg-slate-900 border border-slate-800 p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-white">Selecciona tu Podio Favorito</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Elige los 3 países finalistas</p>
+                </div>
+                <button id="closePodioModal" class="rounded-full bg-slate-800 hover:bg-slate-700 h-8 w-8 text-xs text-slate-300 cursor-pointer">✕</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">🏆 Campeón</label>
+                    <select id="podioCampeon" class="mt-1.5 h-11 w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 text-sm text-white outline-none focus:border-amber-500"></select>
+                </div>
+                <div>
+                    <label class="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">🥈 Subcampeón</label>
+                    <select id="podioSubcampeon" class="mt-1.5 h-11 w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 text-sm text-white outline-none focus:border-amber-500"></select>
+                </div>
+                <div>
+                    <label class="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">🥉 Tercer Lugar</label>
+                    <select id="podioTercero" class="mt-1.5 h-11 w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 text-sm text-white outline-none focus:border-amber-500"></select>
+                </div>
+                <div class="rounded-2xl bg-amber-500/5 p-3.5 border border-amber-500/10 text-xs text-slate-400">
+                    <p class="font-bold text-amber-400">Regla de Exclusividad:</p>
+                    <p class="mt-0.5">No es válido duplicar una misma selección de país en múltiples casillas del podio.</p>
+                </div>
+                <button id="savePodioButton" class="w-full h-12 rounded-full bg-sky-500 hover:bg-sky-400 text-slate-950 text-sm font-bold cursor-pointer transition active:scale-95 shadow-lg shadow-sky-950/30">Guardar Mi Podio</button>
+                <p id="podioWarning" class="hidden text-xs text-rose-400 text-center font-semibold"></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalPronostico" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+        <div class="w-full max-w-sm rounded-3xl bg-slate-900 border border-slate-800 p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-white">Ingresar Marcador</h2>
+                    <p id="modalMatchTitle" class="text-xs text-slate-400 mt-0.5"></p>
+                </div>
+                <button id="closePronosticoModal" class="rounded-full bg-slate-800 hover:bg-slate-700 h-8 w-8 text-xs text-slate-300 cursor-pointer">✕</button>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 rounded-2xl bg-slate-950 border border-slate-800/80 p-4">
+                <div class="text-center space-y-2">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate px-1" id="localLabel">Local</p>
+                    <span class="block text-4xl font-black text-white" id="scoreLocal">0</span>
+                    <div class="flex items-center justify-center gap-1.5 pt-1">
+                        <button type="button" onclick="updateScore('local', 1)" class="h-9 w-9 rounded-xl bg-amber-500 text-slate-950 font-bold text-sm cursor-pointer hover:bg-amber-400">+</button>
+                        <button type="button" onclick="updateScore('local', -1)" class="h-9 w-9 rounded-xl bg-slate-800 text-white font-bold text-sm cursor-pointer hover:bg-slate-700">−</button>
+                    </div>
+                </div>
+                <div class="text-center space-y-2">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 truncate px-1" id="visitorLabel">Visitante</p>
+                    <span class="block text-4xl font-black text-white" id="scoreVisitor">0</span>
+                    <div class="flex items-center justify-center gap-1.5 pt-1">
+                        <button type="button" onclick="updateScore('visitor', 1)" class="h-9 w-9 rounded-xl bg-amber-500 text-slate-950 font-bold text-sm cursor-pointer hover:bg-amber-400">+</button>
+                        <button type="button" onclick="updateScore('visitor', -1)" class="h-9 w-9 rounded-xl bg-slate-800 text-white font-bold text-sm cursor-pointer hover:bg-slate-700">−</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="bonusEliminatoriaContainer" class="hidden space-y-3">
+                <div class="rounded-2xl bg-[#00A651]/5 p-3.5 border border-[#00A651]/10 text-xs text-slate-400">
+                    <p class="font-bold text-[#00A651]">Bonus de Clasificación Obligatorio:</p>
+                    <p class="mt-0.5">Este partido es de eliminación. Si crees que empatarán, indica quién avanza a la siguiente ronda por penales.</p>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="clasificaLocal" type="button" class="h-11 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 cursor-pointer transition">Avanza Local</button>
+                    <button id="clasificaVisitor" type="button" class="h-11 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 cursor-pointer transition">Avanza Visitante</button>
+                </div>
+            </div>
+
+            <button id="savePronosticoButton" type="button" class="w-full h-12 rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-bold transition cursor-pointer active:scale-95 shadow-lg shadow-amber-950/40">Confirmar Marcador</button>
+            <p id="pronosticoWarning" class="hidden text-xs text-rose-400 text-center font-semibold"></p>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://wpuojiqbgxqdolalzfql.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwdW9qaXFiZ3hxZG9sYWx6ZnFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDA4OTcsImV4cCI6MjA5NjIxNjg5N30.wiTgJrSogrCxDwK3YlP87rPyRUfne8OcSkirtEQQClo";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const sessionButton = document.getElementById('sessionButton');
+        const userStatus = document.getElementById('userStatus');
+        const contentPronosticos = document.getElementById('contentPronosticos');
+        const contentRanking = document.getElementById('contentRanking');
+        const contentReglamento = document.getElementById('contentReglamento');
+        const tabPronosticos = document.getElementById('tabPronosticos');
+        const tabRanking = document.getElementById('tabRanking');
+        const tabReglamento = document.getElementById('tabReglamento');
+        const fixtureCards = document.getElementById('fixtureCards');
+        const pendingTitle = document.getElementById('pendingTitle');
+        const pendingSubtitle = document.getElementById('pendingSubtitle');
+        const actionPending = document.getElementById('actionPending');
+        const filterUpcoming = document.getElementById('filterUpcoming');
+        const filterPending = document.getElementById('filterPending');
+        const podioResumen = document.getElementById('podioResumen');
+        const podioNota = document.getElementById('podioNota');
+        const openPodioButton = document.getElementById('openPodioButton');
+        const userBanner = document.getElementById('userBanner');
+        const userPositionText = document.getElementById('userPositionText');
+        const userPointsText = document.getElementById('userPointsText');
+        const userExactosCount = document.getElementById('userExactosCount');
+        const userPositivosCount = document.getElementById('userPositivosCount');
+        const rankingList = document.getElementById('rankingList');
+        const modalPlayerDetail = document.getElementById('modalPlayerDetail');
+        const closePlayerModal = document.getElementById('closePlayerModal');
+        const playerDetailAvatar = document.getElementById('playerDetailAvatar');
+        const playerDetailName = document.getElementById('playerDetailName');
+        const playerDetailPosition = document.getElementById('playerDetailPosition');
+        const playerDetailExactos = document.getElementById('playerDetailExactos');
+        const playerDetailPositivos = document.getElementById('playerDetailPositivos');
+        const modalPodio = document.getElementById('modalPodio');
+        const closePodioModal = document.getElementById('closePodioModal');
+        const savePodioButton = document.getElementById('savePodioButton');
+        const podioCampeon = document.getElementById('podioCampeon');
+        const podioSubcampeon = document.getElementById('podioSubcampeon');
+        const podioTercero = document.getElementById('podioTercero');
+        const podioWarning = document.getElementById('podioWarning');
+        const modalPronostico = document.getElementById('modalPronostico');
+        const closePronosticoModal = document.getElementById('closePronosticoModal');
+        const modalMatchTitle = document.getElementById('modalMatchTitle');
+        const localLabel = document.getElementById('localLabel');
+        const visitorLabel = document.getElementById('visitorLabel');
+        const scoreLocal = document.getElementById('scoreLocal');
+        const scoreVisitor = document.getElementById('scoreVisitor');
+        const clasificaLocal = document.getElementById('clasificaLocal');
+        const clasificaVisitor = document.getElementById('clasificaVisitor');
+        const savePronosticoButton = document.getElementById('savePronosticoButton');
+        const pronosticoWarning = document.getElementById('pronosticoWarning');
+        const timerDays = document.getElementById('timerDays');
+        const timerHours = document.getElementById('timerHours');
+        const timerMinutes = document.getElementById('timerMinutes');
+        const timerSeconds = document.getElementById('timerSeconds');
+        const bonusEliminatoriaContainer = document.getElementById('bonusEliminatoriaContainer');
+
+        let clienteId = localStorage.getItem('cliente_id');
+        let clienteName = localStorage.getItem('cliente_name');
+        let partidos = [];
+        let pronosticos = [];
+        let podioActual = null;
+        let clientesMap = new Map();
+        let equiposMap = new Map();
+        let equiposList = [];
+        let partidoSeleccionado = null;
+        let selectedClasifica = null;
+        let firstMatchTime = null;
+        let autoLockFired = false;
+
+        const puntajes = { exacto: 12, cercano: 8, empateCorrecto: 8, ganadorCorrecto: 5, parcial: 2, bonusClasifica: 3 };
+        const tabs = [tabPronosticos, tabRanking, tabReglamento];
+
+        const PREMIOS_SANTI = [
+            "¡Ganaste una Cerveza Águila helada para tu próximo pedido! 🍺",
+            "¡Espectacular! Te ganaste un Bono del 10% de descuento en tu próxima compra. 🎟️",
+            "¡Qué puntería! Reclama una porción de papas fritas gratis en tu próxima visita. 🍟",
+            "¡Ganaste un Refresco Coca-Cola gratis para acompañar tu próximo combo! 🥤",
+            "¡Acierto Mundialista! Te ganaste un Bono de $5.000 COP para tu próximo consumo. 💰",
+            "¡Qué arquerazo! Te ganaste una empanada de la casa gratis para tu próxima compra. 🥟"
+        ];
+
+        function getPremioForPronostico(pronId) {
+            let hash = 0;
+            const str = String(pronId);
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash |= 0;
+            }
+            return PREMIOS_SANTI[Math.abs(hash) % PREMIOS_SANTI.length];
+        }
+
+        function renderPremios() {
+            const premiosSection = document.getElementById('premiosSection');
+            const premiosCards = document.getElementById('premiosCards');
+            const premiosBadge = document.getElementById('premiosBadge');
+
+            const misPremios = pronosticos.filter(pr =>
+                String(pr.cliente_id) === String(clienteId) &&
+                pr.puntos_ganados === 12 &&
+                pr.premio_inmediato_ganado === true
+            );
+
+            if (!misPremios.length) {
+                premiosSection.classList.add('hidden');
+                return;
+            }
+
+            premiosSection.classList.remove('hidden');
+            premiosBadge.textContent = misPremios.length;
+
+            premiosCards.innerHTML = misPremios.map(pr => {
+                const partido = partidos.find(p => String(p.id) === String(pr.partido_id));
+                const matchLabel = partido
+                    ? `${escapeHTML(partido.equipo_local)} ${partido.goles_local_real}–${partido.goles_visitante_real} ${escapeHTML(partido.equipo_visitante)}`
+                    : `Partido #${pr.partido_id}`;
+                const premio = getPremioForPronostico(pr.id);
+                return `
+                <article class="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex flex-col gap-3">
+                    <div class="flex items-start justify-between gap-2 flex-wrap">
+                        <span class="text-[10px] font-black text-emerald-400 uppercase tracking-wider">⚽ Marcador Exacto · 12 pts</span>
+                        <span class="text-[10px] font-semibold text-slate-400">${matchLabel}</span>
+                    </div>
+                    <p class="text-sm font-black text-white animate-pulse leading-snug">${escapeHTML(premio)}</p>
+                    <p class="text-[10px] text-emerald-300/60 leading-relaxed border-t border-emerald-500/20 pt-2">
+                        Muestra esta pantalla en caja en tu próximo pedido para redimirlo.
+                    </p>
+                </article>`;
+            }).join('');
+        }
+
+        window.addEventListener('DOMContentLoaded', initApp);
+        sessionButton.addEventListener('click', handleSessionButton);
+        tabPronosticos.addEventListener('click', () => showTab('pronosticos'));
+        tabRanking.addEventListener('click', () => showTab('ranking'));
+        tabReglamento.addEventListener('click', () => showTab('reglamento'));
+        openPodioButton.addEventListener('click', openPodioModal);
+        closePodioModal.addEventListener('click', () => closeModal(modalPodio));
+        savePodioButton.addEventListener('click', savePodio);
+        closePronosticoModal.addEventListener('click', () => closeModal(modalPronostico));
+        closePlayerModal.addEventListener('click', () => closeModal(modalPlayerDetail));
+        actionPending.addEventListener('click', openPendingMatch);
+        filterUpcoming.addEventListener('click', () => switchFilter('upcoming'));
+        filterPending.addEventListener('click', () => switchFilter('pending'));
+        clasificaLocal.addEventListener('click', () => selectClasifica('local'));
+        clasificaVisitor.addEventListener('click', () => selectClasifica('visitor'));
+        savePronosticoButton.addEventListener('click', savePronostico);
+
+        async function initApp() {
+            if (!clienteId) {
+                userStatus.textContent = 'Usuario invitado. Inicia sesión para guardar datos.';
+                sessionButton.textContent = 'Ingresar';
+                disableApp('Inicia sesión para visualizar el fixture interactivo, ver la tabla de posiciones y guardar tus apuestas.');
+                return;
+            }
+            userStatus.textContent = `Sesión: ${clienteName || 'Jugador Pa\'onde Santi'}.`;
+            sessionButton.textContent = 'Salir';
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+            await cargarDatos();
+            renderPendingCard();
+            renderFixture('upcoming');
+            renderPremios();
+            renderRanking();
+        }
+
+        function handleSessionButton() {
+            localStorage.removeItem('cliente_id');
+            localStorage.removeItem('cliente_name');
+            window.location.href = 'index.html';
+        }
+
+        function irAlAdmin() {
+            const clave = prompt('Ingrese la clave de administrador para continuar:');
+            if (clave === null) return;
+            if (clave === 'Santi2026') {
+                window.location.href = 'paondesanti-admin.html';
+            } else {
+                alert('Acceso denegado.');
+            }
+        }
+
+        async function cargarDatos() {
+            await cargarEquipos();
+            await cargarClientes();
+            await cargarPartidos();
+            await cargarPronosticos();
+            await cargarPodio();
+            await cargarTodosPodios();
+            refreshPodioCard();
+        }
+
+        async function cargarEquipos() {
+            try {
+                const { data, error } = await supabaseClient.from('equipos').select('nombre,sigla,grupo_inicial');
+                if (error) throw error;
+                // store object with grupo and sigla for better fallbacks and keep list for fuzzy matches
+                equiposList = (data || []).map(e => ({ nombre: e.nombre, norm: normalizeCountryName(String(e.nombre)), grupo: e.grupo_inicial, sigla: e.sigla }));
+                // primary map by normalized name -> full equipo object
+                equiposMap = new Map(equiposList.map(e => [e.norm, e]));
+                // quick lookup by sigla (uppercase)
+                equiposSiglaMap = new Map(equiposList.filter(e => e.sigla).map(e => [String(e.sigla).toUpperCase(), e]));
+                // build small alias map for faster lookup of common variants
+                equiposAliasMap = new Map();
+                equiposList.forEach(e => {
+                    equiposAliasMap.set(e.norm, e);
+                    if (e.sigla) equiposAliasMap.set(String(e.sigla).toLowerCase(), e);
+                    // also add token-level aliases (single-word tokens)
+                    e.norm.split(' ').forEach(tok => { if (tok.length > 2) equiposAliasMap.set(tok, e); });
+                });
+            } catch (error) {
+                console.error('Error cargando equipos:', error);
+                equiposMap = new Map();
+                equiposList = [];
+            }
+        }
+
+        function getGroupForTeam(name) {
+            if (!name) return null;
+            const key = normalizeCountryName(String(name));
+            // exact normalized match
+            const exact = equiposMap.get(key) || equiposAliasMap && equiposAliasMap.get(key);
+            if (exact) return exact.grupo || null;
+            // match by sigla
+            const maybeSig = String(name || '').trim().toUpperCase();
+            const bySig = (equiposSiglaMap && equiposSiglaMap.get(maybeSig)) || equiposList.find(e => e.sigla && String(e.sigla).toUpperCase() === maybeSig);
+            if (bySig) return bySig.grupo || null;
+            // fuzzy substring match on normalized names
+            const fuzzy = equiposList.find(e => e.norm.includes(key) || key.includes(e.norm));
+            if (fuzzy) return fuzzy.grupo || null;
+            // token-intersection heuristic: share a meaningful token
+            const keyTokens = new Set(key.split(' ').filter(Boolean));
+            for (const e of equiposList) {
+                const eTokens = new Set(e.norm.split(' ').filter(Boolean));
+                let common = 0;
+                eTokens.forEach(t => { if (keyTokens.has(t)) common++; });
+                if (common >= 1) return e.grupo || null;
+            }
+            // try stripping common stopwords and retry
+            const stopwords = ['de','del','la','el','los','las','fc','club','team'];
+            const strip = str => str.split(' ').filter(w => !stopwords.includes(w)).join(' ');
+            const strippedKey = strip(key);
+            if (strippedKey && strippedKey !== key) {
+                const strippedMatch = equiposList.find(e => e.norm.includes(strippedKey) || strippedKey.includes(e.norm));
+                if (strippedMatch) return strippedMatch.grupo || null;
+            }
+            return null;
+        }
+
+        function getGroupFromPartido(partido) {
+            if (!partido) return null;
+            // prefer explicit attached info from cargarPartidos
+            if (partido.local_info && partido.local_info.grupo) return partido.local_info.grupo;
+            if (partido.visitante_info && partido.visitante_info.grupo) return partido.visitante_info.grupo;
+            // fallback to lookup by team name
+            return getGroupForTeam(partido.equipo_local) || getGroupForTeam(partido.equipo_visitante) || null;
+        }
+
+        async function cargarClientes() {
+            try {
+                const { data, error } = await supabaseClient.from('clientes').select('id,nombres_apellidos');
+                if (error) throw error;
+                clientesMap = new Map((data || []).map(c => [String(c.id), c.nombres_apellidos]));
+            } catch (error) {
+                console.error('Error cargando clientes:', error);
+                clientesMap = new Map();
+            }
+        }
+
+        async function cargarPartidos() {
+            try {
+                const { data, error } = await supabaseClient.from('partidos').select('*').order('fecha_hora', { ascending: true });
+                if (error) throw error;
+                // deduplicate partidos by local+visitante+fecha to avoid duplicated fixtures
+                const raw = data || [];
+                const seen = new Set();
+                const unique = [];
+                raw.forEach(p => {
+                    // preferir orden_torneo como clave si está disponible
+                    const key = p.orden_torneo ? `orden:${p.orden_torneo}` : `${normalizeCountryName(p.equipo_local)}|${normalizeCountryName(p.equipo_visitante)}|${p.fecha_hora}`;
+                    if (!seen.has(key)) { seen.add(key); unique.push(p); }
+                    else console.debug('[partidos] duplicado detectado y omitido:', p);
+                });
+                partidos = unique;
+                // attach equipo info from equiposMap (if loaded) to each partido for reliable group lookup
+                partidos.forEach(p => {
+                    try {
+                        const localKey = normalizeCountryName(String(p.equipo_local));
+                        const visitKey = normalizeCountryName(String(p.equipo_visitante));
+                        let localInfo = (equiposMap && equiposMap.get(localKey)) || (equiposAliasMap && equiposAliasMap.get(localKey)) || null;
+                        let visitInfo = (equiposMap && equiposMap.get(visitKey)) || (equiposAliasMap && equiposAliasMap.get(visitKey)) || null;
+                        // fallback: fuzzy search in equiposList
+                        if (!localInfo && equiposList.length) {
+                            localInfo = equiposList.find(e => e.norm.includes(localKey) || localKey.includes(e.norm) || e.norm.split(' ').some(t => localKey.split(' ').includes(t))) || null;
+                        }
+                        if (!visitInfo && equiposList.length) {
+                            visitInfo = equiposList.find(e => e.norm.includes(visitKey) || visitKey.includes(e.norm) || e.norm.split(' ').some(t => visitKey.split(' ').includes(t))) || null;
+                        }
+                        p.local_info = localInfo;
+                        p.visitante_info = visitInfo;
+                    } catch (e) { p.local_info = p.visitante_info = null; }
+                });
+                firstMatchTime = partidos.length ? new Date(partidos[0].fecha_hora) : null;
+            } catch (error) {
+                console.error('Error partidos:', error);
+                fixtureCards.innerHTML = `<p class="text-xs text-rose-400 p-4">Error de conexión al fixture.</p>`;
+            }
+        }
+
+        async function cargarPronosticos() {
+            try {
+                const { data, error } = await supabaseClient.from('pronosticos').select('*');
+                if (error) throw error;
+                pronosticos = data || [];
+            } catch (error) {
+                console.error('Error pronósticos:', error);
+                pronosticos = [];
+            }
+        }
+
+        let todosPodios = [];
+        async function cargarTodosPodios() {
+            try {
+                const { data, error } = await supabaseClient.from('podios').select('*');
+                if (error) throw error;
+                todosPodios = data || [];
+            } catch (error) {
+                console.error('Error cargando todos los podios:', error);
+                todosPodios = [];
+            }
+        }
+
+        async function cargarPodio() {
+            try {
+                const { data, error } = await supabaseClient.from('podios').select('*').eq('cliente_id', clienteId).maybeSingle();
+                if (error) throw error;
+                podioActual = data || null;
+            } catch (error) {
+                console.error('Error podio individual:', error);
+                podioActual = null;
+            }
+        }
+
+        function updateCountdown() {
+            const end = firstMatchTime ? new Date(firstMatchTime) : new Date(Date.now() + 86400000);
+            const diff = end - Date.now();
+            if (diff <= 0) {
+                timerDays.textContent = '00'; timerHours.textContent = '00'; timerMinutes.textContent = '00'; timerSeconds.textContent = '00';
+                if (!autoLockFired) {
+                    autoLockFired = true;
+                    refreshPodioCard();
+                    renderFixture(filterPending.classList.contains('bg-amber-500') ? 'pending' : 'upcoming');
+                }
+                return;
+            }
+            // Auto-lock UI exactly when the 60-second window opens for the first match
+            if (diff <= 60000 && !autoLockFired) {
+                autoLockFired = true;
+                refreshPodioCard();
+                renderFixture(filterPending.classList.contains('bg-amber-500') ? 'pending' : 'upcoming');
+            }
+            timerDays.textContent = String(Math.floor(diff / 86400000)).padStart(2, '0');
+            timerHours.textContent = String(Math.floor((diff % 86400000) / 3600000)).padStart(2, '0');
+            timerMinutes.textContent = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+            timerSeconds.textContent = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+        }
+
+        function renderPendingCard() {
+            const now = Date.now();
+            const next = partidos.filter(p => new Date(p.fecha_hora).getTime() > now).find(p => !hasUserPronostico(p.id));
+            const upcoming = next || partidos.find(p => new Date(p.fecha_hora).getTime() > now);
+            if (!upcoming) {
+                pendingTitle.textContent = 'Todos los partidos completados';
+                pendingSubtitle.textContent = '¡Buen trabajo! No tienes pendientes.';
+                actionPending.classList.add('hidden');
+                return;
+            }
+            pendingTitle.textContent = `${upcoming.equipo_local} vs ${upcoming.equipo_visitante}`;
+            // derive group from equipos table when possible
+            const grupo = getGroupFromPartido(upcoming);
+            pendingSubtitle.textContent = `${formatDate(upcoming.fecha_hora)} a las ${formatTime(upcoming.fecha_hora)}${grupo ? ' • Grupo ' + grupo : ''}`;
+            actionPending.classList.remove('hidden');
+            actionPending.dataset.partidoId = upcoming.id;
+            actionPending.dataset.local = upcoming.equipo_local;
+            actionPending.dataset.visitante = upcoming.equipo_visitante;
+        }
+
+        function renderFixture(filterType = 'upcoming') {
+            const now = Date.now();
+            let displayed = partidos.filter(partido => new Date(partido.fecha_hora).getTime() > now);
+            if (filterType === 'pending') displayed = displayed.filter(partido => !hasUserPronostico(partido.id));
+            if (!displayed.length) {
+                fixtureCards.innerHTML = `<div class="col-span-full py-6 text-center text-xs text-slate-500">Ningún encuentro deportivo coincide con este filtro.</div>`;
+                return;
+            }
+            fixtureCards.innerHTML = '';
+            // Deduplicate partidos by id to avoid rendering duplicates
+            const seen = new Set();
+            const uniqueDisplayed = [];
+            displayed.forEach(p => {
+                const key = String(p.id);
+                if (!seen.has(key)) { seen.add(key); uniqueDisplayed.push(p); }
+            });
+            uniqueDisplayed.forEach(partido => {
+                const deadline = new Date(partido.fecha_hora).getTime() - 60000;
+                const isLocked = Date.now() >= deadline;
+                const done = hasUserPronostico(partido.id);
+                const userPron = pronosticos.find(pr => String(pr.partido_id) === String(partido.id) && String(pr.cliente_id) === String(clienteId));
+                const card = document.createElement('article');
+                card.className = 'rounded-2xl border border-slate-900 bg-slate-900/30 p-4 flex flex-col justify-between gap-4';
+                // Debug: show mapping info for each partido to diagnose missing flags/groups
+                try {
+                    const localKeyDbg = normalizeCountryName(String(partido.equipo_local));
+                    const visitKeyDbg = normalizeCountryName(String(partido.equipo_visitante));
+                    const flagUrlL = getFlagUrl(partido.equipo_local);
+                    const flagUrlR = getFlagUrl(partido.equipo_visitante);
+                    const equipoLocalInfo = equiposMap.get(localKeyDbg);
+                    const equipoVisitInfo = equiposMap.get(visitKeyDbg);
+                    console.debug('[renderFixture] partido:', { id: partido.id, local: partido.equipo_local, visitante: partido.equipo_visitante, fecha: partido.fecha_hora, fase: partido.fase, orden: partido.orden_torneo, flagUrlL, flagUrlR, equipoLocalInfo, equipoVisitInfo });
+                } catch (e) { console.debug('[renderFixture] debug failed', e); }
+                const leftFlagHtml = getFlagImgTag(partido.equipo_local, 'h-10 w-10');
+                const rightFlagHtml = getFlagImgTag(partido.equipo_visitante, 'h-10 w-10');
+                const faseVal = partido.fase ? String(partido.fase).trim() : '';
+                let phaseLabel = '';
+                if (/^grupo\s+[A-Z]$/i.test(faseVal)) {
+                    phaseLabel = faseVal;
+                } else if (!faseVal || faseVal.toLowerCase() === 'grupos' || faseVal.toLowerCase() === 'fase de grupos') {
+                    const grupo = getGroupFromPartido(partido);
+                    phaseLabel = grupo ? `Grupo ${grupo}` : (faseVal || 'Fase de Grupos');
+                } else {
+                    phaseLabel = faseVal;
+                }
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">${escapeHTML(phaseLabel)}</span>
+                        <span class="text-[11px] text-slate-400 font-medium">${formatMatchDate(partido.fecha_hora)}</span>
+                    </div>
+
+                    <div class="flex items-center justify-between gap-2 mt-3">
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                            <div class="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-slate-800">${leftFlagHtml}</div>
+                            <p class="text-sm font-bold text-white truncate">${escapeHTML(partido.equipo_local)}</p>
+                        </div>
+
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <div class="w-12 h-11 rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center text-xl font-black text-white">${userPron ? userPron.goles_local_apuesta : ''}</div>
+                            <span class="text-[10px] text-slate-600 font-black">vs</span>
+                            <div class="w-12 h-11 rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center text-xl font-black text-white">${userPron ? userPron.goles_visitante_apuesta : ''}</div>
+                        </div>
+
+                        <div class="flex items-center gap-2 min-w-0 flex-1 justify-end">
+                            <p class="text-sm font-semibold text-slate-300 truncate text-right">${escapeHTML(partido.equipo_visitante)}</p>
+                            <div class="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-slate-800">${rightFlagHtml}</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 flex justify-end">
+                        <button class="h-9 px-5 rounded-full text-xs font-bold ${isLocked ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : done ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-amber-500 hover:bg-amber-400 text-slate-950'}" ${isLocked ? 'disabled' : ''} onclick="openPronostico('${partido.id}','${escapeHTML(partido.equipo_local)}','${escapeHTML(partido.equipo_visitante)}')">
+                            ${done ? 'Editar' : 'Pronosticar'}
+                        </button>
+                    </div>
+                `;
+                fixtureCards.appendChild(card);
+            });
+        }
+
+        function normalizeCountryName(name) {
+            if (!name) return '';
+            // remove accents, punctuation and lower
+            const from = 'ÁÀÂÄÃáàâäãÉÈÊËéèêëÍÌÎÏíìîïÓÒÔÖÕóòôöõÚÙÛÜúùûüÑñÇç';
+            const to   = 'AAAAAaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuNnCc';
+            let s = String(name).trim();
+            for (let i = 0; i < from.length; i++) s = s.replace(new RegExp(from[i], 'g'), to[i]);
+            s = s.replace(/\./g, '').replace(/, /g, ' ').replace(/\s+/g, ' ').toLowerCase();
+            return s;
+        }
+
+        function mapCountryToISO(name) {
+            const n = normalizeCountryName(name);
+            const m = {
+                'mexico': 'mx', 'sudafrica': 'za', 'corea del sur': 'kr', 'corea': 'kr', 'republica checa': 'cz', 'rep checa': 'cz', 'checa': 'cz',
+                'canada': 'ca', 'brasil': 'br', 'suiza': 'ch', 'qatar': 'qa', 'estados unidos': 'us', 'estadosunidos': 'us', 'eeuu': 'us', 'usa': 'us',
+                'paraguay': 'py', 'bosnia y herzegovina': 'ba', 'bosnia y herz': 'ba', 'bosnia': 'ba', 'catar': 'qa', 'marruecos': 'ma', 'marrocos': 'ma',
+                'argentina': 'ar', 'colombia': 'co', 'peru': 'pe', 'peru': 'pe', 'alemania': 'de', 'espana': 'es', 'españa': 'es', 'japon': 'jp', 'japon': 'jp',
+                'inglaterra': 'gb', 'reino unido': 'gb', 'holanda': 'nl', 'paises bajos': 'nl', 'belgica': 'be', 'dinamarca': 'dk', 'suecia': 'se',
+                'tunisia': 'tn', 'turquia': 'tr', 'chile': 'cl', 'uruguay': 'uy', 'polonia': 'pl', 'noruega': 'no'
+            };
+            return m[n] || null;
+        }
+
+        function getFlagUrl(name) {
+            const code = mapCountryToISO(name);
+            if (!code) {
+                console.debug('[flags] sin mapeo ISO para:', name);
+                return null;
+            }
+            return `https://flagcdn.com/48x36/${code}.png`;
+        }
+
+        function replaceFlagWithInitials(img) {
+            try {
+                const name = img.getAttribute('alt') || '';
+                const key = normalizeCountryName(name);
+                const equipoInfo = equiposMap.get(key);
+                const sigla = equipoInfo && equipoInfo.sigla ? String(equipoInfo.sigla).toUpperCase() : null;
+                const parts = (name || '').split(' ');
+                const initials = parts.map(p => p[0] || '').slice(0,2).join('').toUpperCase();
+                const span = document.createElement('span');
+                span.className = img.className + ' inline-flex items-center justify-center rounded-sm bg-slate-800 text-xs font-bold text-white';
+                span.textContent = sigla || initials || name.substring(0,2).toUpperCase();
+                img.replaceWith(span);
+            } catch (e) {
+                img.style.display = 'none';
+            }
+        }
+
+        function getFlagImgTag(name, sizeClass = 'h-8 w-10') {
+            const url = getFlagUrl(name);
+            if (!url) {
+                // try equiposMap sigla first
+                const key = normalizeCountryName(name);
+                const info = equiposMap.get(key);
+                const sigla = info && info.sigla ? String(info.sigla).toUpperCase() : null;
+                const display = sigla || (name || '').split(' ').map(p => p[0] || '').slice(0,2).join('').toUpperCase();
+                return `<span class="inline-block ${sizeClass} rounded-sm bg-slate-800 text-xs font-bold text-white flex items-center justify-center">${escapeHTML(display)}</span>`;
+            }
+            // onerror will call replaceFlagWithInitials to show sigla/initials fallback
+            return `<img src="${url}" alt="${escapeHTML(name)}" class="${sizeClass} object-contain rounded-sm" onerror="replaceFlagWithInitials(this)">`;
+        }
+
+        function hasUserPronostico(partidoId) {
+            return pronosticos.some(pron => String(pron.partido_id) === String(partidoId) && String(pron.cliente_id) === String(clienteId));
+        }
+
+        function openPronostico(id, local, visitante) {
+            const partido = partidos.find(item => String(item.id) === String(id));
+            if (!partido) return;
+            const deadline = new Date(partido.fecha_hora).getTime() - 60000;
+            if (Date.now() >= deadline) {
+                alert('El tiempo límite para este encuentro caducó.');
+                return;
+            }
+            partidoSeleccionado = partido;
+            modalMatchTitle.textContent = `${local} vs ${visitante}`;
+            localLabel.innerHTML = `${getFlagImgTag(local,'h-6 w-8 mr-2 inline-block')} ${escapeHTML(local)}`;
+            visitorLabel.innerHTML = `${getFlagImgTag(visitante,'h-6 w-8 mr-2 inline-block')} ${escapeHTML(visitante)}`;
+            // Prefill con pronóstico existente si lo hay
+            const existing = pronosticos.find(pr => String(pr.partido_id) === String(id) && String(pr.cliente_id) === String(clienteId));
+            scoreLocal.textContent = existing ? String(existing.goles_local_apuesta || 0) : '0';
+            scoreVisitor.textContent = existing ? String(existing.goles_visitante_apuesta || 0) : '0';
+            selectedClasifica = null;
+
+            if(partido.es_eliminatoria) {
+                bonusEliminatoriaContainer.classList.remove('hidden');
+            } else {
+                bonusEliminatoriaContainer.classList.add('hidden');
+            }
+
+            clasificaLocal.className = 'h-10 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 transition cursor-pointer';
+            clasificaVisitor.className = 'h-10 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 transition cursor-pointer';
+            pronosticoWarning.className = 'hidden';
+            openModal(modalPronostico);
+        }
+
+        function updateScore(side, delta) {
+            const element = side === 'local' ? scoreLocal : scoreVisitor;
+            let value = Number(element.textContent) + delta;
+            if (value < 0) value = 0;
+            element.textContent = String(value);
+        }
+
+        function selectClasifica(side) {
+            selectedClasifica = side;
+            clasificaLocal.className = side === 'local' ? 'h-10 rounded-xl bg-[#00A651] text-white font-bold text-xs shadow-md' : 'h-10 rounded-xl bg-slate-800 text-slate-400 text-xs';
+            clasificaVisitor.className = side === 'visitor' ? 'h-10 rounded-xl bg-[#00A651] text-white font-bold text-xs shadow-md' : 'h-10 rounded-xl bg-slate-800 text-slate-400 text-xs';
+        }
+
+        async function savePronostico() {
+            if (!partidoSeleccionado) return;
+            const deadline = new Date(partidoSeleccionado.fecha_hora).getTime() - 60000;
+            if (Date.now() >= deadline) {
+                pronosticoWarning.className = 'text-xs text-rose-400 text-center font-bold';
+                pronosticoWarning.textContent = '🔒 El tiempo de registro para este partido ya cerró.';
+                setTimeout(() => closeModal(modalPronostico), 1800);
+                renderFixture(filterPending.classList.contains('bg-amber-500') ? 'pending' : 'upcoming');
+                return;
+            }
+            const golesLocal = Number(scoreLocal.textContent);
+            const golesVisitante = Number(scoreVisitor.textContent);
+            
+            if (partidoSeleccionado.es_eliminatoria && selectedClasifica === null) {
+                pronosticoWarning.className = 'text-xs text-rose-400 text-center font-bold';
+                pronosticoWarning.textContent = 'Especifica el equipo calificado por bonus de desempate.';
+                return;
+            }
+
+            // CORRECCIÓN CRÍTICA: Construir el payload de forma condicional basándose en si existe o aplica 'clasifica'
+            const clienteIdVal = isNaN(Number(clienteId)) ? clienteId : Number(clienteId);
+            const payload = {
+                cliente_id: clienteIdVal,
+                partido_id: partidoSeleccionado.id,
+                goles_local_apuesta: golesLocal,
+                goles_visitante_apuesta: golesVisitante,
+                updated_at: new Date().toISOString()
+            };
+
+            try {
+                // use string onConflict to avoid possible serialization issues
+                const { error } = await supabaseClient.from('pronosticos').upsert([payload], { onConflict: 'cliente_id,partido_id' });
+                if (error) throw error;
+                closeModal(modalPronostico);
+                await cargarPronosticos();
+                renderPendingCard();
+                renderFixture(filterPending.classList.contains('bg-amber-500') ? 'pending' : 'upcoming');
+                renderRanking();
+            } catch (error) {
+                pronosticoWarning.className = 'text-xs text-rose-400 text-center font-bold';
+                pronosticoWarning.textContent = 'Error crítico de sincronización.';
+                // Mejor logging: muestra mensaje, detalles y hint cuando existan
+                try {
+                    console.error('Error guardando pronóstico:', error.message || error);
+                    if (error.details) console.error('Detalles:', error.details);
+                    if (error.hint) console.error('Hint:', error.hint);
+                    // si el objeto de error tiene más propiedades, imprímelas como JSON
+                    console.error('Error completo:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+                } catch (e) {
+                    console.error('Error al loggear el error:', e, error);
+                }
+                // También recomendamos revisar la pestaña Network y la respuesta HTTP del endpoint /rest/v1/pronosticos
+            }
+        }
+
+        function openPendingMatch() {
+            const partidoId = actionPending.dataset.partidoId;
+            if (!partidoId) return;
+            openPronostico(partidoId, actionPending.dataset.local, actionPending.dataset.visitante);
+        }
+
+        function switchFilter(filterType) {
+            filterUpcoming.className = filterType === 'upcoming' ? 'flex-1 rounded-full bg-amber-500 text-slate-950 px-4 py-2.5 text-xs font-bold transition cursor-pointer' : 'flex-1 rounded-full bg-slate-900 text-slate-400 px-4 py-2.5 text-xs font-bold transition cursor-pointer hover:bg-slate-800';
+            filterPending.className = filterType === 'pending' ? 'flex-1 rounded-full bg-amber-500 text-slate-950 px-4 py-2.5 text-xs font-bold transition cursor-pointer' : 'flex-1 rounded-full bg-slate-900 text-slate-400 px-4 py-2.5 text-xs font-bold transition cursor-pointer hover:bg-slate-800';
+            renderFixture(filterType);
+        }
+
+        function renderRanking() {
+            const ranking = buildRanking();
+            renderUserBanner(ranking);
+            if (!ranking.length) {
+                rankingList.innerHTML = '<p class="text-xs text-slate-500 text-center py-6">Sin registros de puntuación de jugadores en esta sección.</p>';
+                return;
+            }
+            rankingList.innerHTML = '';
+            ranking.forEach((player, index) => {
+                const letter = player.name.charAt(0).toUpperCase();
+                const avatarBg = generateAvatarColor(player.id);
+                const podioLabel = player.podioChampion ? `<span class="ml-2 inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider" style="background-color:#FF6F00">🏆 ${escapeHTML(player.podioChampion)}</span>` : '';
+                const row = document.createElement('button');
+                row.type = 'button';
+                row.className = 'w-full text-left rounded-2xl border border-slate-900 bg-slate-900/30 p-3.5 transition hover:bg-slate-900/60 flex items-center justify-between gap-4 cursor-pointer';
+                row.onclick = () => openPlayerDetailModal(player, index + 1);
+                row.innerHTML = `
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-black text-white" style="background-color: ${avatarBg}">${letter}</div>
+                        <div class="min-w-0">
+                            <div class="flex items-center flex-wrap gap-1">
+                                <p class="text-sm font-bold text-white truncate max-w-[160px]">${escapeHTML(player.name)}</p>
+                                ${podioLabel}
+                            </div>
+                            <p class="text-[11px] text-slate-500">Posición general #${index + 1}</p>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                        <p class="text-base font-black text-[#FFC107]">${player.totalPoints}</p>
+                        <p class="text-[9px] text-slate-500 uppercase tracking-wide">pts</p>
+                    </div>
+                `;
+                rankingList.appendChild(row);
+            });
+        }
+
+        function renderUserBanner(ranking) {
+            const userRank = ranking.findIndex(p => String(p.id) === String(clienteId));
+            if (userRank === -1) {
+                userBanner.classList.add('hidden');
+                return;
+            }
+            userBanner.classList.remove('hidden');
+            const user = ranking[userRank];
+            userPositionText.textContent = `#${userRank + 1}`;
+            userPointsText.textContent = `Puntos totales conseguidos: ${user.totalPoints}`;
+            userExactosCount.textContent = user.exactos;
+            userPositivosCount.textContent = (user.exactos + user.cercanos + user.bonos + user.parciales);
+        }
+
+        function generateAvatarColor(clienteIdVal) {
+            const colors = ['#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4', '#6366f1'];
+            let hash = 0; const str = String(clienteIdVal);
+            for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        function openPlayerDetailModal(player, position) {
+            playerDetailAvatar.textContent = player.name.charAt(0).toUpperCase();
+            playerDetailAvatar.style.backgroundColor = generateAvatarColor(player.id);
+            playerDetailName.textContent = escapeHTML(player.name);
+            playerDetailPosition.textContent = `Clasificación actual: #${position}`;
+            playerDetailExactos.textContent = player.exactos;
+            playerDetailPositivos.textContent = (player.exactos + player.cercanos + player.bonos + player.parciales);
+            openModal(modalPlayerDetail);
+        }
+
+        function buildRanking() {
+            const players = new Map();
+            todosPodios.forEach(podio => {
+                const nombreFromMap = clientesMap.get(String(podio.cliente_id));
+                const nombre = nombreFromMap || (String(podio.cliente_id) === String(clienteId) ? clienteName : `Competidor #${podio.cliente_id}`);
+                if (!players.has(podio.cliente_id)) {
+                    players.set(podio.cliente_id, { id: podio.cliente_id, name: nombre, exactos: 0, cercanos: 0, bonos: 0, parciales: 0, totalPoints: 0, podioChampion: podio.campeon || null });
+                } else {
+                    players.get(podio.cliente_id).podioChampion = podio.campeon || null;
+                }
+            });
+
+            pronosticos.forEach(pron => {
+                const partido = partidos.find(item => String(item.id) === String(pron.partido_id));
+                if (!partido) return;
+                    const actualLocal = safeNumber(partido.goles_local_real);
+                    const actualVisitante = safeNumber(partido.goles_visitante_real);
+                const nombreFromMap = clientesMap.get(String(pron.cliente_id));
+                const nombre = nombreFromMap || (String(pron.cliente_id) === String(clienteId) ? clienteName : `Competidor #${pron.cliente_id}`);
+                if (!players.has(pron.cliente_id)) {
+                    players.set(pron.cliente_id, { id: pron.cliente_id, name: nombre, exactos: 0, cercanos: 0, bonos: 0, parciales: 0, totalPoints: 0, podioChampion: null });
+                }
+                const player = players.get(pron.cliente_id);
+                const result = calculateMatchScore(pron, partido, actualLocal, actualVisitante);
+                player.totalPoints += result.points;
+                if (result.exacto) player.exactos += 1;
+                if (result.cercano) player.cercanos += 1;
+                if (result.bonus) player.bonos += 1;
+                if (result.parcial) player.parciales += 1;
+            });
+
+            return Array.from(players.values()).sort((a, b) => {
+                if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+                if (b.exactos !== a.exactos) return b.exactos - a.exactos;
+                return b.cercanos - a.cercanos;
+            });
+        }
+
+        function calculateMatchScore(pron, partido, actualLocal, actualVisitante) {
+            const golesLocal = safeNumber(pron.goles_local_apuesta);
+            const golesVisitante = safeNumber(pron.goles_visitante_apuesta);
+            const resultado = { points: 0, exacto: false, cercano: false, bonus: false, parcial: false };
+            if (actualLocal === null || actualVisitante === null || golesLocal === null || golesVisitante === null) return resultado;
+            if (golesLocal === actualLocal && golesVisitante === actualVisitante) {
+                resultado.points = puntajes.exacto; resultado.exacto = true; return resultado;
+            }
+            const pronDiff = golesLocal - golesVisitante;
+            const actualDiff = actualLocal - actualVisitante;
+            if (golesLocal === golesVisitante && actualLocal === actualVisitante) {
+                resultado.points = puntajes.empateCorrecto; resultado.cercano = true; return resultado;
+            }
+            if (Math.sign(pronDiff) === Math.sign(actualDiff) && Math.abs(pronDiff) === Math.abs(actualDiff)) {
+                resultado.points = puntajes.cercano; resultado.cercano = true;
+            } else if (Math.sign(pronDiff) === Math.sign(actualDiff)) {
+                resultado.points = puntajes.ganadorCorrecto;
+            } else if (golesLocal === actualLocal || golesVisitante === actualVisitante) {
+                resultado.points = puntajes.parcial; resultado.parcial = true;
+            }
+            // Nota: la columna 'clasifica' no existe en el esquema entregado, por tanto
+            // el bonus por clasificación no se aplica desde el pronóstico individual.
+            return resultado;
+        }
+
+        function getClasifica(actualLocal, actualVisitante) {
+            if (actualLocal === actualVisitante) return 'draw';
+            return actualLocal > actualVisitante ? 'local' : 'visitor';
+        }
+
+        function refreshPodioCard() {
+            if (!podioActual) {
+                podioResumen.textContent = 'Pendiente';
+                podioNota.textContent = 'Registra tu podio antes del pitazo inicial.';
+                return;
+            }
+            podioResumen.textContent = `Campeón: ${podioActual.campeon || '---'}`;
+            if (firstMatchTime && Date.now() >= new Date(firstMatchTime).getTime() - 60000) {
+                podioNota.textContent = '🔒 Guardado definitivo. No editable.';
+                openPodioButton.classList.add('hidden');
+            }
+        }
+
+        function openPodioModal() {
+            if (firstMatchTime && Date.now() >= new Date(firstMatchTime).getTime() - 60000) {
+                alert('🔒 El podio está bloqueado. No se puede editar a partir de 1 minuto antes del primer partido.');
+                return;
+            }
+            fillPodioOptions();
+            podioWarning.className = 'hidden';
+            if (podioActual) {
+                podioCampeon.value = podioActual.campeon || '';
+                podioSubcampeon.value = podioActual.subcampeon || '';
+                podioTercero.value = podioActual.tercer_lugar || '';
+            }
+            openModal(modalPodio);
+        }
+
+        function fillPodioOptions() {
+            const equipos = [...new Set(partidos.flatMap(item => [item.equipo_local, item.equipo_visitante]).filter(Boolean))];
+            [podioCampeon, podioSubcampeon, podioTercero].forEach(select => {
+                select.innerHTML = '<option value="">Elige una opción</option>';
+                equipos.forEach(equipo => {
+                    const option = document.createElement('option'); option.value = equipo; option.textContent = equipo;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        async function savePodio() {
+            if (firstMatchTime && Date.now() >= new Date(firstMatchTime).getTime() - 60000) {
+                podioWarning.className = 'text-xs text-rose-400 text-center font-bold';
+                podioWarning.textContent = '🔒 El podio está bloqueado definitivamente.';
+                return;
+            }
+            const campeon = podioCampeon.value;
+            const subcampeon = podioSubcampeon.value;
+            const tercero = podioTercero.value;
+            if (!campeon || !subcampeon || !tercero) {
+                podioWarning.className = 'text-xs text-rose-400 text-center font-bold';
+                podioWarning.textContent = 'Asigna los tres puestos reglamentarios.';
+                return;
+            }
+            if (new Set([campeon, subcampeon, tercero]).size < 3) {
+                podioWarning.className = 'text-xs text-rose-400 text-center font-bold';
+                podioWarning.textContent = 'No puedes asignar un país a dos puestos.';
+                return;
+            }
+            try {
+                const payload = { cliente_id: clienteId, campeon, subcampeon, tercer_lugar: tercero };
+                const { error } = await supabaseClient.from('podios').upsert([payload], { onConflict: ['cliente_id'] });
+                if (error) throw error;
+                await cargarPodio();
+                refreshPodioCard();
+                closeModal(modalPodio);
+            } catch (error) {
+                podioWarning.className = 'text-xs text-rose-400 text-center font-bold';
+                podioWarning.textContent = 'Fallo al guardar el podio.';
+            }
+        }
+
+        function disableApp(message) {
+            contentPronosticos.innerHTML = `<div class="p-6 text-center text-slate-500 text-xs border border-dashed border-slate-900 rounded-2xl">${message}</div>`;
+            contentRanking.innerHTML = `<div class="p-6 text-center text-slate-500 text-xs border border-dashed border-slate-900 rounded-2xl">Visualización restringida para invitados.</div>`;
+        }
+
+        function showTab(tab) {
+            tabPronosticos.className = 'rounded-full bg-slate-900 text-slate-400 px-6 py-2.5 text-sm font-bold cursor-pointer';
+            tabRanking.className = 'rounded-full bg-slate-900 text-slate-400 px-6 py-2.5 text-sm font-bold cursor-pointer';
+            tabReglamento.className = 'rounded-full bg-slate-900 text-slate-400 px-6 py-2.5 text-sm font-bold cursor-pointer';
+            
+            contentPronosticos.classList.add('hidden');
+            contentRanking.classList.add('hidden');
+            contentReglamento.classList.add('hidden');
+
+            if (tab === 'pronosticos') {
+                tabPronosticos.className = 'rounded-full bg-amber-500 text-slate-950 px-6 py-2.5 text-sm font-bold cursor-pointer';
+                contentPronosticos.classList.remove('hidden');
+            } else if (tab === 'ranking') {
+                tabRanking.className = 'rounded-full bg-amber-500 text-slate-950 px-6 py-2.5 text-sm font-bold cursor-pointer';
+                contentRanking.classList.remove('hidden');
+            } else {
+                tabReglamento.className = 'rounded-full bg-amber-500 text-slate-950 px-6 py-2.5 text-sm font-bold cursor-pointer';
+                contentReglamento.classList.remove('hidden');
+            }
+        }
+
+        function openModal(modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+        function closeModal(modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+        function formatDate(value) { return value ? new Date(value).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' }) : '--/--'; }
+        function formatTime(value) { return value ? new Date(value).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '--:--'; }
+        function formatMatchDate(value) {
+            if (!value) return '--';
+            const d = new Date(value);
+            const fecha = d.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'America/Bogota' });
+            const hora = d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' });
+            return `${fecha} · ${hora}`;
+        }
+        function escapeHTML(text) { return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+        function safeNumber(value) { if (value === null || value === undefined || value === '') return null; const number = Number(value); return Number.isNaN(number) ? null : number; }
+    </script>
+</body>
+</html>
