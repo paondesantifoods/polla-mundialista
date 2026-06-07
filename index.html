@@ -99,8 +99,26 @@
                     </div>
                 </div>
 
+                <!-- Formulario de nueva factura (solo visible cuando el ticket fue rechazado) -->
+                <div id="rejectedForm" class="hidden mt-4 space-y-3">
+                    <div class="rounded-2xl border border-rose-800/40 bg-rose-950/20 p-4 text-sm text-rose-300 leading-6">
+                        Solicita una nueva factura válida en caja y regístrala aquí para continuar participando.
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 mb-2">Nueva Factura POS</label>
+                        <input id="nuevaFacturaInput" type="text" placeholder="Ej: POS005"
+                            class="h-14 w-full rounded-3xl border border-slate-700 bg-slate-950 px-4 text-base text-white outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20" />
+                        <p class="mt-1.5 text-[11px] text-slate-500 px-1">Formato: POS + número (POS001, POS002…)</p>
+                    </div>
+                    <p id="rejectedMsg" class="text-center text-sm text-rose-400 hidden"></p>
+                    <button id="btnNuevaFactura" onclick="registrarNuevaFactura()"
+                        class="flex h-14 w-full items-center justify-center rounded-3xl bg-amber-500 text-base font-bold text-slate-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-70">
+                        Registrar nueva factura
+                    </button>
+                </div>
+
                 <button onclick="salirEspera()"
-                    class="mt-5 flex h-12 w-full items-center justify-center rounded-3xl border border-slate-700 bg-transparent text-sm font-semibold text-slate-400 transition hover:bg-slate-800/50 hover:text-white">
+                    class="mt-4 flex h-12 w-full items-center justify-center rounded-3xl border border-slate-700 bg-transparent text-sm font-semibold text-slate-400 transition hover:bg-slate-800/50 hover:text-white">
                     Cerrar sesión
                 </button>
             </div>
@@ -201,10 +219,76 @@
                     'mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-rose-500/20 border border-rose-500/30';
                 document.getElementById('waitingTitle').textContent = 'Ticket rechazado';
                 document.getElementById('waitingSpinner').classList.add('hidden');
-                document.getElementById('waitingStatus').textContent = 'Contacta al equipo en caja.';
+                document.getElementById('waitingStatus').textContent = 'Factura no válida.';
+                document.getElementById('rejectedForm').classList.remove('hidden');
             } else {
                 document.getElementById('waitingTitle').textContent = 'Ticket en validación';
                 document.getElementById('waitingStatus').textContent = 'Esperando aprobación...';
+                document.getElementById('rejectedForm').classList.add('hidden');
+            }
+        }
+
+        async function registrarNuevaFactura() {
+            const nuevaFactura = document.getElementById('nuevaFacturaInput').value.trim().toUpperCase();
+            const clienteId = localStorage.getItem('cliente_id');
+            const msgEl = document.getElementById('rejectedMsg');
+            const btn = document.getElementById('btnNuevaFactura');
+
+            msgEl.classList.add('hidden');
+            msgEl.textContent = '';
+
+            if (!nuevaFactura) {
+                msgEl.textContent = 'Ingresa el número de la nueva factura.';
+                msgEl.classList.remove('hidden');
+                return;
+            }
+            if (!/^POS\d+$/i.test(nuevaFactura)) {
+                msgEl.textContent = 'Formato inválido. Usa POS + número (ej: POS005).';
+                msgEl.classList.remove('hidden');
+                return;
+            }
+            if (!clienteId) {
+                salirEspera();
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Registrando...';
+
+            try {
+                // Insertar nuevo ticket (el rechazado queda como historial)
+                const { error } = await supabaseClient
+                    .from('registro_tickets')
+                    .insert([{
+                        cliente_id: String(clienteId),
+                        numero_factura: nuevaFactura,
+                        estado: 'pendiente'
+                    }]);
+
+                if (error) {
+                    if (error.code === '23505') {
+                        msgEl.textContent = 'Esta factura ya fue usada por otro usuario. Intenta con otra.';
+                        msgEl.classList.remove('hidden');
+                        return;
+                    }
+                    throw error;
+                }
+
+                // Mostrar pantalla de espera de nuevo (estado pendiente)
+                document.getElementById('nuevaFacturaInput').value = '';
+                mostrarEspera(
+                    'Tu nueva factura está siendo validada. Por favor, espera unos minutos para participar.',
+                    nuevaFactura,
+                    'pendiente'
+                );
+
+            } catch (err) {
+                console.error('registrarNuevaFactura:', err);
+                msgEl.textContent = 'Error al registrar. Intenta de nuevo.';
+                msgEl.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Registrar nueva factura';
             }
         }
 
