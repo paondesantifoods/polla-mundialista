@@ -163,6 +163,10 @@
         // ── Ticket validation ────────────────────────────────────────────
 
         async function checkTicketAndRedirect(clienteId) {
+            // Paso 1: solo la consulta Supabase dentro del try/catch
+            let ticketEstado = null;
+            let ticketFactura = null;
+
             try {
                 const { data, error } = await supabaseClient
                     .from('registro_tickets')
@@ -172,59 +176,72 @@
                     .limit(1)
                     .maybeSingle();
 
-                // Tabla no existe todavía → dejar pasar (compatibilidad usuarios anteriores)
-                if (error && error.code === '42P01') {
-                    window.location.href = 'polla.html';
-                    return;
-                }
-                if (error) throw error;
-
-                // Sin ticket registrado → dejar pasar
-                if (!data) {
+                if (error) {
+                    // Tabla aún no creada → acceso libre
+                    if (error.code === '42P01') { window.location.href = 'polla.html'; return; }
+                    console.warn('ticket query error:', error.code, error.message);
                     window.location.href = 'polla.html';
                     return;
                 }
 
-                if (data.estado === 'aprobado') {
+                // Sin ticket o aprobado → acceso libre
+                if (!data || data.estado === 'aprobado') {
                     window.location.href = 'polla.html';
-                } else if (data.estado === 'rechazado') {
-                    mostrarEspera(
-                        'Tu ticket fue rechazado. Por favor acércate al mostrador de Pa\'onde Santi para aclarar.',
-                        data.numero_factura,
-                        'rechazado'
-                    );
-                } else {
-                    mostrarEspera(
-                        'Tu ticket está siendo validado por nuestro equipo. Por favor, espera unos minutos para participar.',
-                        data.numero_factura,
-                        'pendiente'
-                    );
+                    return;
                 }
+
+                ticketEstado  = data.estado;
+                ticketFactura = data.numero_factura;
+
             } catch (err) {
-                console.error('checkTicketAndRedirect:', err);
-                // Error de red o inesperado → dejar pasar
+                console.error('checkTicketAndRedirect red:', err.message);
                 window.location.href = 'polla.html';
+                return;
             }
+
+            // Paso 2: mostrar pantalla FUERA del try/catch
+            // Si mostrarEspera lanza un error de JS, se verá en consola y NO redirigirá a polla
+            mostrarEspera(
+                ticketEstado === 'rechazado'
+                    ? 'Tu ticket fue rechazado. Para participar debes registrar una nueva factura POS válida.'
+                    : 'Tu ticket está siendo validado por nuestro equipo. Por favor, espera unos minutos para participar.',
+                ticketFactura,
+                ticketEstado
+            );
         }
 
         function mostrarEspera(message, factura, estado) {
-            document.getElementById('loginContainer').classList.add('hidden');
-            document.getElementById('waitingScreen').classList.remove('hidden');
-            document.getElementById('waitingMessage').textContent = message;
-            document.getElementById('waitingFactura').textContent = factura || '–';
+            const $ = id => {
+                const el = document.getElementById(id);
+                if (!el) console.error('mostrarEspera: elemento no encontrado →', id);
+                return el;
+            };
+
+            $('loginContainer')?.classList.add('hidden');
+            $('waitingScreen')?.classList.remove('hidden');
+            const msgEl = $('waitingMessage');
+            if (msgEl) msgEl.textContent = message;
+            const facEl = $('waitingFactura');
+            if (facEl) facEl.textContent = factura || '–';
 
             if (estado === 'rechazado') {
-                document.getElementById('waitingIcon').innerHTML = '<span class="text-2xl">❌</span>';
-                document.getElementById('waitingIcon').className =
-                    'mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-rose-500/20 border border-rose-500/30';
-                document.getElementById('waitingTitle').textContent = 'Ticket rechazado';
-                document.getElementById('waitingSpinner').classList.add('hidden');
-                document.getElementById('waitingStatus').textContent = 'Factura no válida.';
-                document.getElementById('rejectedForm').classList.remove('hidden');
+                const icon = $('waitingIcon');
+                if (icon) {
+                    icon.innerHTML = '<span class="text-2xl">❌</span>';
+                    icon.className = 'mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-rose-500/20 border border-rose-500/30';
+                }
+                const title = $('waitingTitle');
+                if (title) title.textContent = 'Ticket rechazado';
+                $('waitingSpinner')?.classList.add('hidden');
+                const status = $('waitingStatus');
+                if (status) status.textContent = 'Factura no válida.';
+                $('rejectedForm')?.classList.remove('hidden');
             } else {
-                document.getElementById('waitingTitle').textContent = 'Ticket en validación';
-                document.getElementById('waitingStatus').textContent = 'Esperando aprobación...';
-                document.getElementById('rejectedForm').classList.add('hidden');
+                const title = $('waitingTitle');
+                if (title) title.textContent = 'Ticket en validación';
+                const status = $('waitingStatus');
+                if (status) status.textContent = 'Esperando aprobación...';
+                $('rejectedForm')?.classList.add('hidden');
             }
         }
 
@@ -374,7 +391,10 @@
                 console.error(error);
                 updateMessage('Error al conectar con Supabase. Revisa la red o la clave.', true);
             } finally {
-                toggleButtons(false, 'Continuar');
+                // No re-habilitar botones si ya está mostrando la pantalla de espera
+                if (document.getElementById('waitingScreen').classList.contains('hidden')) {
+                    toggleButtons(false, 'Continuar');
+                }
             }
         });
 
