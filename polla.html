@@ -23,10 +23,6 @@
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <button onclick="irAlAdmin()" title="Administrar"
-                    class="w-9 h-9 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-500 hover:text-slate-300 text-base flex items-center justify-center transition-colors cursor-pointer">
-                    ⚙️
-                </button>
                 <button id="sessionButton" class="h-10 rounded-full px-5 text-sm font-bold text-white shadow-lg shadow-emerald-950/50 cursor-pointer transition active:scale-95" style="background-color:#00A651">Ingresar</button>
             </div>
         </div>
@@ -526,16 +522,6 @@
             localStorage.removeItem('cliente_id');
             localStorage.removeItem('cliente_name');
             window.location.href = 'index.html';
-        }
-
-        function irAlAdmin() {
-            const clave = prompt('Ingrese la clave de administrador para continuar:');
-            if (clave === null) return;
-            if (clave === 'Santi2026') {
-                window.location.href = 'paondesanti-admin.html';
-            } else {
-                alert('Acceso denegado.');
-            }
         }
 
         async function cargarDatos() {
