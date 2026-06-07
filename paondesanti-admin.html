@@ -17,13 +17,17 @@
                 <h1 class="text-base font-black text-white leading-tight">⚙️ Panel de Administración</h1>
             </div>
             <div class="flex items-center gap-2">
-                <button onclick="window.location.href='polla.html'"
+                <button onclick="setView('partidos'); window.scrollTo(0,0);"
                     class="h-8 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 text-xs font-semibold transition-colors">
-                    🏠 Home
+                    🏠 Inicio
                 </button>
                 <button onclick="recargarDatos()"
                     class="h-8 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-300 text-xs font-semibold transition-colors">
                     ↻ Recargar
+                </button>
+                <button onclick="window.location.href='index.html'"
+                    class="h-8 px-3 rounded-lg bg-rose-900/50 hover:bg-rose-800/60 active:bg-rose-700/60 text-rose-300 text-xs font-semibold transition-colors border border-rose-800/40">
+                    🚪 Salir
                 </button>
                 <span id="connectionBadge"
                     class="px-2 py-1 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400">
@@ -64,6 +68,10 @@
                     class="flex-1 h-9 rounded-xl text-xs font-bold transition-colors text-slate-400 hover:text-white">
                     🎫 Tickets
                     <span id="ticketsBadge" class="ml-1 hidden bg-rose-500 text-white text-[9px] font-black rounded-full px-1.5 py-0.5"></span>
+                </button>
+                <button id="btnViewPosiciones" onclick="setView('posiciones')"
+                    class="flex-1 h-9 rounded-xl text-xs font-bold transition-colors text-slate-400 hover:text-white">
+                    🏆 Posiciones
                 </button>
             </div>
         </div>
@@ -138,6 +146,42 @@
             <div id="ticketsList" class="space-y-3 mt-1"></div>
         </div>
 
+        <!-- ── POSICIONES VIEW ── -->
+        <div id="viewPosiciones" class="hidden px-4 pb-24">
+            <div class="pt-3 pb-2 flex items-center justify-between gap-2">
+                <h2 class="text-sm font-bold text-white uppercase tracking-wider">Tabla de Posiciones</h2>
+                <button onclick="loadPosiciones()"
+                    class="h-8 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors">
+                    ↻ Actualizar
+                </button>
+            </div>
+
+            <div id="posicionesLoading" class="py-12 text-center">
+                <div class="inline-block w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-sm text-slate-500 mt-3">Cargando posiciones...</p>
+            </div>
+
+            <div id="posicionesEmpty" class="py-12 text-center hidden">
+                <p class="text-3xl mb-2">🏆</p>
+                <p class="text-slate-500 text-sm">Aún no hay puntos registrados.</p>
+            </div>
+
+            <!-- Podio top 3 -->
+            <div id="posicionesPodio" class="hidden grid grid-cols-3 gap-2 mb-4"></div>
+
+            <!-- Tabla completa -->
+            <div id="posicionesTabla" class="hidden rounded-2xl border border-slate-800 bg-slate-900/30 overflow-hidden">
+                <div class="grid grid-cols-[2rem_1fr_3rem_3rem_3rem] gap-x-2 px-3 py-2 border-b border-slate-800 text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                    <span>#</span>
+                    <span>Participante</span>
+                    <span class="text-center">Pts</span>
+                    <span class="text-center">Exact</span>
+                    <span class="text-center">Total</span>
+                </div>
+                <div id="posicionesRows"></div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Toast -->
@@ -181,14 +225,19 @@
 
     function setView(view) {
         currentView = view;
-        const isPartidos = view === 'partidos';
-        document.getElementById('viewPartidos').classList.toggle('hidden', !isPartidos);
-        document.getElementById('viewTickets').classList.toggle('hidden', isPartidos);
-        document.getElementById('btnViewPartidos').className =
-            `flex-1 h-9 rounded-xl text-xs font-bold transition-colors ${isPartidos ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`;
-        document.getElementById('btnViewTickets').className =
-            `flex-1 h-9 rounded-xl text-xs font-bold transition-colors ${!isPartidos ? 'bg-sky-500 text-slate-950' : 'text-slate-400 hover:text-white'}`;
-        if (!isPartidos) loadTickets();
+        const views = ['partidos', 'tickets', 'posiciones'];
+        const activeColors = { partidos: 'bg-amber-500', tickets: 'bg-sky-500', posiciones: 'bg-emerald-500' };
+
+        views.forEach(v => {
+            document.getElementById(`view${v.charAt(0).toUpperCase() + v.slice(1)}`).classList.toggle('hidden', v !== view);
+            const btn = document.getElementById(`btnView${v.charAt(0).toUpperCase() + v.slice(1)}`);
+            btn.className = `flex-1 h-9 rounded-xl text-xs font-bold transition-colors ${
+                v === view ? activeColors[v] + ' text-slate-950' : 'text-slate-400 hover:text-white'
+            }`;
+        });
+
+        if (view === 'tickets') loadTickets();
+        if (view === 'posiciones') loadPosiciones();
     }
 
     function setTicketFilter(estado) {
@@ -750,6 +799,104 @@
             showToast('Error: ' + (err.message || err), 'error');
             btns.forEach(b => { b.disabled = false; });
         }
+    }
+
+    // ── Posiciones ───────────────────────────────────────────────────────
+
+    async function loadPosiciones() {
+        document.getElementById('posicionesLoading').classList.remove('hidden');
+        document.getElementById('posicionesEmpty').classList.add('hidden');
+        document.getElementById('posicionesPodio').classList.add('hidden');
+        document.getElementById('posicionesTabla').classList.add('hidden');
+
+        try {
+            const [{ data: pronData, error: e1 }, { data: clientesData, error: e2 }] = await Promise.all([
+                supabaseClient.from('pronosticos').select('cliente_id, puntos_ganados'),
+                supabaseClient.from('clientes').select('id, nombres_apellidos, celular')
+            ]);
+            if (e1) throw e1;
+            if (e2) throw e2;
+
+            const clientesMap = new Map((clientesData || []).map(c => [String(c.id), c]));
+            const acum = new Map();
+
+            (pronData || []).forEach(p => {
+                const key = String(p.cliente_id);
+                if (!acum.has(key)) acum.set(key, { puntos: 0, exactos: 0, total: 0 });
+                const e = acum.get(key);
+                e.puntos += p.puntos_ganados || 0;
+                e.total++;
+                if ((p.puntos_ganados || 0) === 12) e.exactos++;
+            });
+
+            const posiciones = [...acum.entries()]
+                .map(([id, stats]) => ({
+                    id,
+                    nombre: clientesMap.get(id)?.nombres_apellidos || 'Desconocido',
+                    celular: clientesMap.get(id)?.celular || '–',
+                    ...stats
+                }))
+                .sort((a, b) => b.puntos - a.puntos || b.exactos - a.exactos);
+
+            document.getElementById('posicionesLoading').classList.add('hidden');
+
+            if (!posiciones.length) {
+                document.getElementById('posicionesEmpty').classList.remove('hidden');
+                return;
+            }
+
+            renderPosiciones(posiciones);
+        } catch (err) {
+            console.error('loadPosiciones:', err);
+            document.getElementById('posicionesLoading').classList.add('hidden');
+            showToast('Error al cargar posiciones: ' + (err.message || err), 'error');
+        }
+    }
+
+    function renderPosiciones(posiciones) {
+        // Podio top 3 — orden visual: 2°, 1°, 3°
+        const podioEl = document.getElementById('posicionesPodio');
+        const medals  = ['🥇', '🥈', '🥉'];
+        const podioBgs = [
+            'bg-slate-800/60 border-slate-700/60 mt-4',   // 2° (izquierda, más bajo)
+            'bg-amber-500/10 border-amber-500/40',          // 1° (centro, más alto)
+            'bg-amber-900/20 border-amber-700/30 mt-4'     // 3° (derecha, más bajo)
+        ];
+        const top3 = posiciones.slice(0, Math.min(3, posiciones.length));
+        const displayOrder = top3.length === 3
+            ? [[top3[1], 2, 0], [top3[0], 1, 1], [top3[2], 3, 2]]
+            : top3.map((p, i) => [p, i + 1, i]);
+
+        podioEl.innerHTML = displayOrder.map(([p, pos, bgIdx]) => `
+            <div class="rounded-2xl border ${podioBgs[bgIdx]} p-3 text-center flex flex-col items-center gap-1">
+                <span class="text-2xl leading-none">${medals[pos - 1]}</span>
+                <p class="text-[11px] font-black text-white leading-tight truncate w-full mt-1">${escapeHTML(p.nombre.split(' ')[0])}</p>
+                <p class="text-lg font-black ${pos === 1 ? 'text-amber-400' : 'text-white'}">${p.puntos}</p>
+                <p class="text-[9px] text-slate-500 uppercase tracking-wide">pts</p>
+            </div>
+        `).join('');
+        podioEl.classList.remove('hidden');
+
+        // Tabla completa
+        const rowsEl = document.getElementById('posicionesRows');
+        rowsEl.innerHTML = posiciones.map((p, i) => {
+            const pos = i + 1;
+            const posColor = pos === 1 ? 'text-amber-400 font-black' : pos <= 3 ? 'text-slate-300 font-bold' : 'text-slate-500';
+            const rowBg = i % 2 === 0 ? '' : 'bg-slate-950/30';
+            return `
+            <div class="grid grid-cols-[2rem_1fr_3rem_3rem_3rem] gap-x-2 px-3 py-2.5 items-center ${rowBg} ${i > 0 ? 'border-t border-slate-800/50' : ''}">
+                <span class="text-xs ${posColor}">${pos}</span>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-white truncate">${escapeHTML(p.nombre)}</p>
+                    <p class="text-[10px] text-slate-500 truncate">${escapeHTML(p.celular)}</p>
+                </div>
+                <span class="text-center text-sm font-black ${pos === 1 ? 'text-amber-400' : pos <= 3 ? 'text-white' : 'text-slate-300'}">${p.puntos}</span>
+                <span class="text-center text-xs text-emerald-400 font-bold">${p.exactos}</span>
+                <span class="text-center text-xs text-slate-400">${p.total}</span>
+            </div>`;
+        }).join('');
+
+        document.getElementById('posicionesTabla').classList.remove('hidden');
     }
 
     // ── WhatsApp Reminders ──────────────────────────────────────────────
