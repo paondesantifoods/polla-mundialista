@@ -76,7 +76,7 @@
             <button id="tabReglamento" class="rounded-full bg-slate-900 hover:bg-slate-800 px-6 py-2.5 text-sm font-bold text-slate-300 cursor-pointer transition">Reglamento</button>
         </nav>
 
-        <section id="contentPronosticos" class="space-y-5">
+        <section id="contentPronosticos" class="space-y-5 overflow-x-hidden">
             <div class="rounded-3xl border border-amber-500/20 bg-amber-500/5 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div class="space-y-1">
                     <p class="text-[10px] font-bold uppercase tracking-wider text-amber-400">Próximo partido sin pronóstico</p>
@@ -104,7 +104,7 @@
                 <div class="px-1">
                     <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Fixture Oficial</h3>
                 </div>
-                <div id="fixtureCards" class="grid gap-3 sm:grid-cols-2"></div>
+                <div id="fixtureCards" class="grid gap-3 sm:grid-cols-2 w-full min-w-0"></div>
             </div>
         </section>
 
@@ -773,25 +773,25 @@
                     phaseLabel = faseVal;
                 }
                 card.innerHTML = `
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">${escapeHTML(phaseLabel)}</span>
-                        <span class="text-[11px] text-slate-400 font-medium">${formatMatchDate(partido.fecha_hora)}</span>
+                    <div class="flex items-center justify-between gap-2 min-w-0">
+                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider shrink-0">${escapeHTML(phaseLabel)}</span>
+                        <span class="text-[11px] text-slate-400 font-medium truncate text-right">${formatMatchDate(partido.fecha_hora)}</span>
                     </div>
 
-                    <div class="flex items-center justify-between gap-2 mt-3">
+                    <div class="flex items-center justify-between gap-2 mt-3 min-w-0">
                         <div class="flex items-center gap-2 min-w-0 flex-1">
                             <div class="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-slate-800">${leftFlagHtml}</div>
-                            <p class="text-sm font-bold text-white truncate">${escapeHTML(partido.equipo_local)}</p>
+                            <p class="text-sm font-bold text-white truncate min-w-0">${escapeHTML(partido.equipo_local)}</p>
                         </div>
 
-                        <div class="flex items-center gap-1.5 shrink-0">
-                            <div class="w-12 h-11 rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center text-xl font-black text-white">${userPron ? userPron.goles_local_apuesta : ''}</div>
-                            <span class="text-[10px] text-slate-600 font-black">vs</span>
-                            <div class="w-12 h-11 rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center text-xl font-black text-white">${userPron ? userPron.goles_visitante_apuesta : ''}</div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <div class="w-11 h-10 rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center text-lg font-black text-white">${userPron ? userPron.goles_local_apuesta : ''}</div>
+                            <span class="text-[10px] text-slate-600 font-black">:</span>
+                            <div class="w-11 h-10 rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center text-lg font-black text-white">${userPron ? userPron.goles_visitante_apuesta : ''}</div>
                         </div>
 
                         <div class="flex items-center gap-2 min-w-0 flex-1 justify-end">
-                            <p class="text-sm font-semibold text-slate-300 truncate text-right">${escapeHTML(partido.equipo_visitante)}</p>
+                            <p class="text-sm font-semibold text-slate-300 truncate text-right min-w-0">${escapeHTML(partido.equipo_visitante)}</p>
                             <div class="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-slate-800">${rightFlagHtml}</div>
                         </div>
                     </div>

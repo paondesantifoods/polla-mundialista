@@ -53,41 +53,90 @@
             </div>
         </div>
 
-        <!-- Search -->
-        <div class="px-4 py-2">
-            <input id="searchInput" type="search" placeholder="🔍  Buscar por país..."
-                class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors">
+        <!-- View Toggle -->
+        <div class="px-4 pt-2 pb-1">
+            <div class="flex rounded-2xl bg-slate-900 border border-slate-800 p-1 gap-1">
+                <button id="btnViewPartidos" onclick="setView('partidos')"
+                    class="flex-1 h-9 rounded-xl text-xs font-bold transition-colors bg-amber-500 text-slate-950">
+                    ⚽ Partidos
+                </button>
+                <button id="btnViewTickets" onclick="setView('tickets')"
+                    class="flex-1 h-9 rounded-xl text-xs font-bold transition-colors text-slate-400 hover:text-white">
+                    🎫 Tickets
+                    <span id="ticketsBadge" class="ml-1 hidden bg-rose-500 text-white text-[9px] font-black rounded-full px-1.5 py-0.5"></span>
+                </button>
+            </div>
         </div>
 
-        <!-- Filter Tabs -->
-        <div class="px-4 py-1 overflow-x-auto">
-            <div id="filterTabs" class="flex gap-2 w-max pb-1"></div>
+        <!-- ── PARTIDOS VIEW ── -->
+        <div id="viewPartidos">
+            <!-- Search -->
+            <div class="px-4 py-2">
+                <input id="searchInput" type="search" placeholder="🔍  Buscar por país..."
+                    class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors">
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="px-4 py-1 overflow-x-auto">
+                <div id="filterTabs" class="flex gap-2 w-max pb-1"></div>
+            </div>
+
+            <!-- Loading -->
+            <div id="loadingState" class="py-16 text-center">
+                <div class="inline-block w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-sm text-slate-500 mt-3">Cargando partidos...</p>
+            </div>
+
+            <!-- Error -->
+            <div id="errorState" class="py-16 text-center hidden px-8">
+                <p class="text-3xl mb-3">⚠️</p>
+                <p id="errorMsg" class="text-rose-400 text-sm font-semibold mb-4">Error al conectar con la base de datos.</p>
+                <button onclick="recargarDatos()"
+                    class="h-10 px-6 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-sm font-semibold">
+                    Reintentar
+                </button>
+            </div>
+
+            <!-- Empty -->
+            <div id="emptyState" class="py-16 text-center hidden">
+                <p class="text-3xl mb-2">🏟️</p>
+                <p class="text-slate-500 text-sm">Sin partidos en este filtro.</p>
+            </div>
+
+            <!-- Cards -->
+            <div id="partidosList" class="px-4 pb-24 space-y-3 hidden"></div>
         </div>
 
-        <!-- Loading -->
-        <div id="loadingState" class="py-16 text-center">
-            <div class="inline-block w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-            <p class="text-sm text-slate-500 mt-3">Cargando partidos...</p>
-        </div>
+        <!-- ── TICKETS VIEW ── -->
+        <div id="viewTickets" class="hidden px-4 pb-24">
+            <!-- Ticket filter tabs -->
+            <div class="flex gap-2 pt-3 pb-2 overflow-x-auto">
+                <button id="tabTicketPendiente" onclick="setTicketFilter('pendiente')"
+                    class="shrink-0 px-4 py-2 rounded-full text-xs font-bold bg-amber-500 text-slate-950 transition-colors whitespace-nowrap">
+                    ⏳ Pendientes
+                </button>
+                <button id="tabTicketAprobado" onclick="setTicketFilter('aprobado')"
+                    class="shrink-0 px-4 py-2 rounded-full text-xs font-bold bg-slate-800 text-slate-400 hover:bg-slate-700 transition-colors whitespace-nowrap">
+                    ✅ Aprobados
+                </button>
+                <button id="tabTicketRechazado" onclick="setTicketFilter('rechazado')"
+                    class="shrink-0 px-4 py-2 rounded-full text-xs font-bold bg-slate-800 text-slate-400 hover:bg-slate-700 transition-colors whitespace-nowrap">
+                    ❌ Rechazados
+                </button>
+            </div>
 
-        <!-- Error -->
-        <div id="errorState" class="py-16 text-center hidden px-8">
-            <p class="text-3xl mb-3">⚠️</p>
-            <p id="errorMsg" class="text-rose-400 text-sm font-semibold mb-4">Error al conectar con la base de datos.</p>
-            <button onclick="recargarDatos()"
-                class="h-10 px-6 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-sm font-semibold">
-                Reintentar
-            </button>
-        </div>
+            <div id="ticketsLoading" class="py-12 text-center hidden">
+                <div class="inline-block w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-sm text-slate-500 mt-3">Cargando tickets...</p>
+            </div>
 
-        <!-- Empty -->
-        <div id="emptyState" class="py-16 text-center hidden">
-            <p class="text-3xl mb-2">🏟️</p>
-            <p class="text-slate-500 text-sm">Sin partidos en este filtro.</p>
-        </div>
+            <div id="ticketsEmpty" class="py-12 text-center hidden">
+                <p class="text-3xl mb-2">🎫</p>
+                <p class="text-slate-500 text-sm">Sin tickets en este estado.</p>
+            </div>
 
-        <!-- Cards -->
-        <div id="partidosList" class="px-4 pb-24 space-y-3 hidden"></div>
+            <div id="ticketsList" class="space-y-3 mt-1"></div>
+        </div>
 
     </div>
 
@@ -118,6 +167,9 @@
     let currentFilter = 'all';
     let currentSearch = '';
     let toastTimer = null;
+    let currentView = 'partidos';
+    let currentTicketFilter = 'pendiente';
+    let allTickets = [];
 
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('searchInput').addEventListener('input', e => {
@@ -126,6 +178,29 @@
         });
         initAdmin();
     });
+
+    function setView(view) {
+        currentView = view;
+        const isPartidos = view === 'partidos';
+        document.getElementById('viewPartidos').classList.toggle('hidden', !isPartidos);
+        document.getElementById('viewTickets').classList.toggle('hidden', isPartidos);
+        document.getElementById('btnViewPartidos').className =
+            `flex-1 h-9 rounded-xl text-xs font-bold transition-colors ${isPartidos ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'}`;
+        document.getElementById('btnViewTickets').className =
+            `flex-1 h-9 rounded-xl text-xs font-bold transition-colors ${!isPartidos ? 'bg-sky-500 text-slate-950' : 'text-slate-400 hover:text-white'}`;
+        if (!isPartidos) loadTickets();
+    }
+
+    function setTicketFilter(estado) {
+        currentTicketFilter = estado;
+        ['pendiente', 'aprobado', 'rechazado'].forEach(s => {
+            const btn = document.getElementById(`tabTicket${s.charAt(0).toUpperCase() + s.slice(1)}`);
+            const isActive = s === estado;
+            const activeColor = s === 'pendiente' ? 'bg-amber-500' : s === 'aprobado' ? 'bg-emerald-500' : 'bg-rose-500';
+            btn.className = `shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-colors whitespace-nowrap ${isActive ? activeColor + ' text-slate-950' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`;
+        });
+        renderTickets();
+    }
 
     async function initAdmin() {
         setLoading(true);
@@ -520,6 +595,161 @@
 
     function escapeAttr(str) {
         return String(str ?? '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // ── Tickets ─────────────────────────────────────────────────────────
+
+    async function loadTickets() {
+        document.getElementById('ticketsLoading').classList.remove('hidden');
+        document.getElementById('ticketsList').innerHTML = '';
+        document.getElementById('ticketsEmpty').classList.add('hidden');
+
+        try {
+            // Two queries — tickets don't have FK to clientes
+            const [{ data: ticketsData, error: ticketsError }, { data: clientesData, error: clientesError }] =
+                await Promise.all([
+                    supabaseClient
+                        .from('registro_tickets')
+                        .select('id, numero_factura, estado, fecha_registro, cliente_id')
+                        .order('fecha_registro', { ascending: false }),
+                    supabaseClient
+                        .from('clientes')
+                        .select('id, nombres_apellidos, celular')
+                ]);
+
+            if (ticketsError) throw ticketsError;
+            if (clientesError) throw clientesError;
+
+            // Merge client data into each ticket
+            const clientesMap = new Map((clientesData || []).map(c => [String(c.id), c]));
+            allTickets = (ticketsData || []).map(t => ({
+                ...t,
+                clientes: clientesMap.get(String(t.cliente_id)) || null
+            }));
+
+            // Update badge with pending count
+            const pendingCount = allTickets.filter(t => t.estado === 'pendiente').length;
+            const badge = document.getElementById('ticketsBadge');
+            if (pendingCount > 0) {
+                badge.textContent = pendingCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            renderTickets();
+        } catch (err) {
+            console.error('loadTickets:', err);
+            showToast('Error al cargar tickets: ' + (err.message || err), 'error');
+        } finally {
+            document.getElementById('ticketsLoading').classList.add('hidden');
+        }
+    }
+
+    function renderTickets() {
+        const filtered = allTickets.filter(t => t.estado === currentTicketFilter);
+        const list = document.getElementById('ticketsList');
+        const empty = document.getElementById('ticketsEmpty');
+
+        if (!filtered.length) {
+            list.innerHTML = '';
+            empty.classList.remove('hidden');
+            return;
+        }
+        empty.classList.add('hidden');
+        list.innerHTML = filtered.map(buildTicketCard).join('');
+    }
+
+    function buildTicketCard(t) {
+        const cliente = t.clientes;
+        const nombre = cliente?.nombres_apellidos || 'Sin nombre';
+        const celular = cliente?.celular || '–';
+        const fechaStr = t.fecha_registro
+            ? new Date(t.fecha_registro).toLocaleString('es-CO', {
+                day: '2-digit', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit',
+                timeZone: 'America/Bogota'
+              })
+            : '–';
+
+        const estadoColors = {
+            pendiente: 'bg-amber-900/30 text-amber-400 border-amber-700/40',
+            aprobado:  'bg-emerald-900/30 text-emerald-400 border-emerald-700/40',
+            rechazado: 'bg-rose-900/30 text-rose-400 border-rose-700/40'
+        };
+        const pill = estadoColors[t.estado] || estadoColors.pendiente;
+
+        const acciones = t.estado === 'pendiente' ? `
+            <div class="flex gap-2 mt-4 pt-3 border-t border-slate-800/60">
+                <button onclick="cambiarEstadoTicket('${escapeAttr(t.id)}', 'aprobado')"
+                    class="flex-1 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-sm font-bold transition-all">
+                    ✅ Aprobar
+                </button>
+                <button onclick="cambiarEstadoTicket('${escapeAttr(t.id)}', 'rechazado')"
+                    class="flex-1 h-10 rounded-xl bg-rose-700/60 hover:bg-rose-700 active:scale-95 text-rose-200 text-sm font-bold transition-all border border-rose-700/40">
+                    ❌ Rechazar
+                </button>
+            </div>
+        ` : '';
+
+        return `
+        <article id="tcard-${escapeAttr(t.id)}" class="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 transition-colors">
+            <div class="flex items-center justify-between gap-2 mb-3">
+                <span class="text-base font-black font-mono text-amber-400">${escapeHTML(t.numero_factura)}</span>
+                <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border ${pill}">${escapeHTML(t.estado)}</span>
+            </div>
+            <div class="space-y-1.5">
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 w-14 shrink-0">Cliente</span>
+                    <span class="text-sm font-semibold text-white truncate">${escapeHTML(nombre)}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 w-14 shrink-0">Celular</span>
+                    <span class="text-sm text-slate-300">${escapeHTML(celular)}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 w-14 shrink-0">Fecha</span>
+                    <span class="text-xs text-slate-400">${escapeHTML(fechaStr)}</span>
+                </div>
+            </div>
+            ${acciones}
+        </article>`;
+    }
+
+    async function cambiarEstadoTicket(ticketId, nuevoEstado) {
+        const card = document.getElementById(`tcard-${ticketId}`);
+        const btns = card ? card.querySelectorAll('button') : [];
+        btns.forEach(b => { b.disabled = true; });
+
+        try {
+            const { error } = await supabaseClient
+                .from('registro_tickets')
+                .update({ estado: nuevoEstado })
+                .eq('id', ticketId);
+
+            if (error) throw error;
+
+            const idx = allTickets.findIndex(t => t.id === ticketId);
+            if (idx !== -1) allTickets[idx].estado = nuevoEstado;
+
+            // Update badge count
+            const pendingCount = allTickets.filter(t => t.estado === 'pendiente').length;
+            const badge = document.getElementById('ticketsBadge');
+            if (pendingCount > 0) {
+                badge.textContent = pendingCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            const emoji = nuevoEstado === 'aprobado' ? '✅' : '❌';
+            showToast(`${emoji} Ticket ${nuevoEstado}`, 'success');
+            renderTickets();
+        } catch (err) {
+            console.error('cambiarEstadoTicket:', err);
+            showToast('Error: ' + (err.message || err), 'error');
+            btns.forEach(b => { b.disabled = false; });
+        }
     }
 
     // ── WhatsApp Reminders ──────────────────────────────────────────────
