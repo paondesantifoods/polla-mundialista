@@ -202,17 +202,17 @@
                     <summary class="flex items-center justify-between cursor-pointer list-none">
                         <div>
                             <p class="text-sm font-bold text-white">Premios, Recompensas e Incentivos</p>
-                            <p class="text-xs text-slate-400 mt-0.5">Premios parciales y premios mayores</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Premios automáticos y gran premio final</p>
                         </div>
                         <span class="text-sm font-bold text-amber-500 transition-transform group-open:rotate-90">➔</span>
                     </summary>
                     <div class="mt-3 text-xs text-slate-300 leading-relaxed space-y-2 border-t border-slate-900 pt-3">
-                        <p><strong>Rey del Marcador Exacto:</strong> Los participantes que consigan la mayor cantidad de aciertos exactos (12 pts) ganarán combos automáticos en el punto físico (Hamburguesa o Perro con papas).</p>
-                        <p class="font-bold text-white">Grandes Premios del Podio Final:</p>
-                        <p>🥇 <strong>1er Puesto:</strong> Premio en efectivo acumulado + mega bote de productos gratis por un mes completo.</p>
-                        <p>🥈 <strong>2do Puesto:</strong> Bono VIP de consumo libre en nuestro restaurante.</p>
-                        <p>🥉 <strong>3er Puesto:</strong> Combo Familiar Especial Pa'onde Santi.</p>
-                        <p class="text-[10px] text-slate-500 mt-2">Sujeto a verificación y presentación de comprobantes de facturación física o virtual autorizada.</p>
+                        <p>Cada vez que aciertes el <strong class="text-amber-400">marcador exacto</strong> de un partido (12 pts), recibirás un premio automático en tu próxima visita al local. ¡Pendiente a tu pantalla cuando lo logres!</p>
+                        <p class="font-bold text-white mt-2">Grandes Premios del Podio Final:</p>
+                        <p>🥇 <strong>1er Puesto</strong> — Premio especial para el mejor pronosticador del torneo.</p>
+                        <p>🥈 <strong>2do Puesto</strong> — Premio para el segundo mejor clasificado.</p>
+                        <p>🥉 <strong>3er Puesto</strong> — Premio para el tercer mejor clasificado.</p>
+                        <p class="text-[10px] text-slate-500 mt-2">Los detalles de los premios se anunciarán próximamente.</p>
                     </div>
                 </details>
 
@@ -505,6 +505,25 @@
                 userStatus.textContent = 'Usuario invitado. Inicia sesión para guardar datos.';
                 sessionButton.textContent = 'Ingresar';
                 disableApp('Inicia sesión para visualizar el fixture interactivo, ver la tabla de posiciones y guardar tus apuestas.');
+                return;
+            }
+            // Verificar que el cliente aún existe en BD (evita acceso con IDs de cuentas eliminadas)
+            try {
+                const { data: clienteCheck, error: checkErr } = await supabaseClient
+                    .from('clientes')
+                    .select('id')
+                    .eq('id', clienteId)
+                    .maybeSingle();
+                if (checkErr || !clienteCheck) {
+                    localStorage.removeItem('cliente_id');
+                    localStorage.removeItem('cliente_name');
+                    window.location.href = 'index.html';
+                    return;
+                }
+            } catch (_) {
+                localStorage.removeItem('cliente_id');
+                localStorage.removeItem('cliente_name');
+                window.location.href = 'index.html';
                 return;
             }
             userStatus.textContent = `Sesión: ${clienteName || 'Jugador Pa\'onde Santi'}.`;
