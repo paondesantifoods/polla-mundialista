@@ -59,19 +59,23 @@
 
         <!-- View Toggle -->
         <div class="px-4 pt-2 pb-1">
-            <div class="flex rounded-2xl bg-slate-900 border border-slate-800 p-1 gap-1">
+            <div class="grid grid-cols-2 rounded-2xl bg-slate-900 border border-slate-800 p-1 gap-1">
                 <button id="btnViewPartidos" onclick="setView('partidos')"
-                    class="flex-1 h-9 rounded-xl text-xs font-bold transition-colors bg-amber-500 text-slate-950">
+                    class="h-9 rounded-xl text-xs font-bold transition-colors bg-amber-500 text-slate-950">
                     ⚽ Partidos
                 </button>
                 <button id="btnViewTickets" onclick="setView('tickets')"
-                    class="flex-1 h-9 rounded-xl text-xs font-bold transition-colors text-slate-400 hover:text-white">
+                    class="h-9 rounded-xl text-xs font-bold transition-colors text-slate-400 hover:text-white">
                     🎫 Tickets
                     <span id="ticketsBadge" class="ml-1 hidden bg-rose-500 text-white text-[9px] font-black rounded-full px-1.5 py-0.5"></span>
                 </button>
                 <button id="btnViewPosiciones" onclick="setView('posiciones')"
-                    class="flex-1 h-9 rounded-xl text-xs font-bold transition-colors text-slate-400 hover:text-white">
+                    class="h-9 rounded-xl text-xs font-bold transition-colors text-slate-400 hover:text-white">
                     🏆 Posiciones
+                </button>
+                <button id="btnViewUsuarios" onclick="setView('usuarios')"
+                    class="h-9 rounded-xl text-xs font-bold transition-colors text-slate-400 hover:text-white">
+                    👥 Usuarios
                 </button>
             </div>
         </div>
@@ -182,6 +186,46 @@
             </div>
         </div>
 
+        <!-- ── USUARIOS VIEW ── -->
+        <div id="viewUsuarios" class="hidden px-4 pb-24">
+            <div class="pt-3 pb-2 flex items-center justify-between gap-2">
+                <h2 class="text-sm font-bold text-white uppercase tracking-wider">Gestión de Usuarios</h2>
+                <button onclick="loadUsuarios()"
+                    class="h-8 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors">
+                    ↻ Actualizar
+                </button>
+            </div>
+
+            <input id="usuariosSearch" type="search" placeholder="🔍 Buscar por nombre o celular..."
+                oninput="currentUsuarioSearch=this.value; renderUsuarios()"
+                class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 transition-colors mb-2">
+
+            <div class="flex gap-2 mb-3 overflow-x-auto">
+                <button id="tabUsuarioActivo" onclick="setUsuarioFilter('activo')"
+                    class="shrink-0 px-4 py-2 rounded-full text-xs font-bold bg-emerald-500 text-slate-950 transition-colors whitespace-nowrap">
+                    ✅ Activos
+                </button>
+                <button id="tabUsuarioInactivo" onclick="setUsuarioFilter('inactivo')"
+                    class="shrink-0 px-4 py-2 rounded-full text-xs font-bold bg-slate-800 text-slate-400 hover:bg-slate-700 transition-colors whitespace-nowrap">
+                    🚫 Inactivos
+                </button>
+                <button id="tabUsuarioTodos" onclick="setUsuarioFilter('todos')"
+                    class="shrink-0 px-4 py-2 rounded-full text-xs font-bold bg-slate-800 text-slate-400 hover:bg-slate-700 transition-colors whitespace-nowrap">
+                    👥 Todos
+                </button>
+            </div>
+
+            <div id="usuariosLoading" class="py-12 text-center hidden">
+                <div class="inline-block w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-sm text-slate-500 mt-3">Cargando usuarios...</p>
+            </div>
+            <div id="usuariosEmpty" class="py-12 text-center hidden">
+                <p class="text-3xl mb-2">👥</p>
+                <p class="text-slate-500 text-sm">Sin usuarios en este filtro.</p>
+            </div>
+            <div id="usuariosList" class="space-y-3"></div>
+        </div>
+
     </div>
 
     <!-- Toast -->
@@ -214,6 +258,9 @@
     let currentView = 'partidos';
     let currentTicketFilter = 'pendiente';
     let allTickets = [];
+    let allUsuarios = [];
+    let currentUsuarioFilter = 'activo';
+    let currentUsuarioSearch = '';
 
     const MAX_PREMIOS_ACIERTOS = 3;
     const PREMIOS_SANTI = [
@@ -256,19 +303,25 @@
 
     function setView(view) {
         currentView = view;
-        const views = ['partidos', 'tickets', 'posiciones'];
-        const activeColors = { partidos: 'bg-amber-500', tickets: 'bg-sky-500', posiciones: 'bg-emerald-500' };
+        const views = ['partidos', 'tickets', 'posiciones', 'usuarios'];
+        const activeColors = {
+            partidos: 'bg-amber-500',
+            tickets: 'bg-sky-500',
+            posiciones: 'bg-emerald-500',
+            usuarios: 'bg-violet-500'
+        };
 
         views.forEach(v => {
             document.getElementById(`view${v.charAt(0).toUpperCase() + v.slice(1)}`).classList.toggle('hidden', v !== view);
             const btn = document.getElementById(`btnView${v.charAt(0).toUpperCase() + v.slice(1)}`);
-            btn.className = `flex-1 h-9 rounded-xl text-xs font-bold transition-colors ${
+            btn.className = `h-9 rounded-xl text-xs font-bold transition-colors ${
                 v === view ? activeColors[v] + ' text-slate-950' : 'text-slate-400 hover:text-white'
             }`;
         });
 
         if (view === 'tickets') loadTickets();
         if (view === 'posiciones') loadPosiciones();
+        if (view === 'usuarios') loadUsuarios();
     }
 
     function setTicketFilter(estado) {
@@ -956,6 +1009,102 @@
         }).join('');
 
         document.getElementById('posicionesTabla').classList.remove('hidden');
+    }
+
+    // ── Usuarios ─────────────────────────────────────────────────────────
+
+    async function loadUsuarios() {
+        document.getElementById('usuariosLoading').classList.remove('hidden');
+        document.getElementById('usuariosList').innerHTML = '';
+        document.getElementById('usuariosEmpty').classList.add('hidden');
+        try {
+            const { data, error } = await supabaseClient
+                .from('clientes')
+                .select('id, nombres_apellidos, celular, activo')
+                .order('nombres_apellidos', { ascending: true });
+            if (error) throw error;
+            allUsuarios = data || [];
+            renderUsuarios();
+        } catch (err) {
+            console.error('loadUsuarios:', err);
+            showToast('Error al cargar usuarios: ' + (err.message || err), 'error');
+        } finally {
+            document.getElementById('usuariosLoading').classList.add('hidden');
+        }
+    }
+
+    function setUsuarioFilter(filtro) {
+        currentUsuarioFilter = filtro;
+        ['activo', 'inactivo', 'todos'].forEach(f => {
+            const btn = document.getElementById(`tabUsuario${f.charAt(0).toUpperCase() + f.slice(1)}`);
+            const isActive = f === filtro;
+            const col = f === 'activo' ? 'bg-emerald-500' : f === 'inactivo' ? 'bg-rose-500' : 'bg-violet-500';
+            btn.className = `shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-colors whitespace-nowrap ${
+                isActive ? col + ' text-slate-950' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+            }`;
+        });
+        renderUsuarios();
+    }
+
+    function renderUsuarios() {
+        const search = currentUsuarioSearch.toLowerCase().trim();
+        let list = currentUsuarioFilter === 'todos'
+            ? allUsuarios
+            : allUsuarios.filter(u => currentUsuarioFilter === 'activo' ? u.activo !== false : u.activo === false);
+        if (search) list = list.filter(u =>
+            (u.nombres_apellidos || '').toLowerCase().includes(search) ||
+            (u.celular || '').includes(search)
+        );
+
+        const listEl = document.getElementById('usuariosList');
+        const emptyEl = document.getElementById('usuariosEmpty');
+        if (!list.length) { listEl.innerHTML = ''; emptyEl.classList.remove('hidden'); return; }
+        emptyEl.classList.add('hidden');
+        listEl.innerHTML = list.map(buildUsuarioCard).join('');
+    }
+
+    function buildUsuarioCard(u) {
+        const activo = u.activo !== false;
+        const statusPill = activo
+            ? 'bg-emerald-900/30 text-emerald-400 border-emerald-700/40'
+            : 'bg-rose-900/30 text-rose-400 border-rose-700/40';
+        const btnStyle = activo
+            ? 'bg-rose-700/40 hover:bg-rose-700/60 text-rose-200 border border-rose-700/40'
+            : 'bg-emerald-600 hover:bg-emerald-500 text-white';
+        const btnLabel = activo ? '🚫 Desactivar usuario' : '✅ Reactivar usuario';
+        return `
+        <article id="ucard-${escapeAttr(String(u.id))}" class="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+            <div class="flex items-center justify-between gap-2 mb-1">
+                <p class="text-sm font-bold text-white truncate">${escapeHTML(u.nombres_apellidos || '–')}</p>
+                <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border shrink-0 ${statusPill}">${activo ? 'Activo' : 'Inactivo'}</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-3">📱 ${escapeHTML(u.celular || '–')}</p>
+            <button onclick="cambiarEstadoUsuario('${escapeAttr(String(u.id))}', ${!activo})"
+                class="w-full h-10 rounded-xl ${btnStyle} text-sm font-bold transition-all active:scale-95 cursor-pointer">
+                ${btnLabel}
+            </button>
+        </article>`;
+    }
+
+    async function cambiarEstadoUsuario(usuarioId, nuevoEstado) {
+        const card = document.getElementById(`ucard-${usuarioId}`);
+        const btn = card?.querySelector('button');
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ Guardando...'; }
+        try {
+            const { error } = await supabaseClient
+                .from('clientes')
+                .update({ activo: nuevoEstado })
+                .eq('id', usuarioId);
+            if (error) throw error;
+            const idx = allUsuarios.findIndex(u => String(u.id) === String(usuarioId));
+            if (idx !== -1) allUsuarios[idx].activo = nuevoEstado;
+            showToast(nuevoEstado ? '✅ Usuario reactivado' : '🚫 Usuario desactivado', 'success');
+            renderUsuarios();
+        } catch (err) {
+            console.error('cambiarEstadoUsuario:', err);
+            showToast('Error: ' + (err.message || err), 'error');
+            renderUsuarios();
+        }
     }
 
     // ── WhatsApp Reminders ──────────────────────────────────────────────

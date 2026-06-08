@@ -507,14 +507,14 @@
                 disableApp('Inicia sesión para visualizar el fixture interactivo, ver la tabla de posiciones y guardar tus apuestas.');
                 return;
             }
-            // Verificar que el cliente aún existe en BD (evita acceso con IDs de cuentas eliminadas)
+            // Verificar que el cliente existe y está activo en BD
             try {
                 const { data: clienteCheck, error: checkErr } = await supabaseClient
                     .from('clientes')
-                    .select('id')
+                    .select('id, activo')
                     .eq('id', clienteId)
                     .maybeSingle();
-                if (checkErr || !clienteCheck) {
+                if (checkErr || !clienteCheck || clienteCheck.activo === false) {
                     localStorage.removeItem('cliente_id');
                     localStorage.removeItem('cliente_name');
                     window.location.href = 'index.html';
