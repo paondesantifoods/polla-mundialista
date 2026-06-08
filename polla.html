@@ -511,38 +511,33 @@
             try {
                 const { data: clienteCheck, error: checkErr } = await supabaseClient
                     .from('clientes')
-                    .select('id, activo')
+                    .select('id')
                     .eq('id', clienteId)
                     .maybeSingle();
                 if (checkErr) {
-                    if (checkErr.code === '42703') {
-                        // Columna 'activo' no existe aún — solo verificar existencia del cliente
-                        const { data: soloId, error: soloErr } = await supabaseClient
-                            .from('clientes').select('id').eq('id', clienteId).maybeSingle();
-                        if (soloErr || !soloId) {
-                            localStorage.removeItem('cliente_id');
-                            localStorage.removeItem('cliente_name');
-                            window.location.href = 'index.html';
-                            return;
-                        }
-                        // existe → permitir paso
-                    } else {
-                        localStorage.removeItem('cliente_id');
-                        localStorage.removeItem('cliente_name');
-                        window.location.href = 'index.html';
-                        return;
-                    }
-                } else if (!clienteCheck || clienteCheck.activo === false) {
+                    // Error de red o BD — no redirigir, dejar pasar para no bloquear usuarios
+                    console.warn('initApp check cliente error:', checkErr.code, checkErr.message);
+                } else if (!clienteCheck) {
+                    // Cliente eliminado de BD → limpiar sesión
                     localStorage.removeItem('cliente_id');
                     localStorage.removeItem('cliente_name');
                     window.location.href = 'index.html';
                     return;
                 }
+                // Verificar campo activo si existe (columna opcional)
+                if (clienteCheck) {
+                    const { data: activoCheck } = await supabaseClient
+                        .from('clientes').select('activo').eq('id', clienteId).maybeSingle();
+                    if (activoCheck && activoCheck.activo === false) {
+                        localStorage.removeItem('cliente_id');
+                        localStorage.removeItem('cliente_name');
+                        window.location.href = 'index.html';
+                        return;
+                    }
+                }
             } catch (_) {
-                localStorage.removeItem('cliente_id');
-                localStorage.removeItem('cliente_name');
-                window.location.href = 'index.html';
-                return;
+                // Error de red — dejar pasar para no bloquear usuarios legítimos
+                console.warn('initApp: no se pudo verificar sesión, continuando...');
             }
             userStatus.textContent = `Sesión: ${clienteName || 'Jugador Pa\'onde Santi'}.`;
             sessionButton.textContent = 'Salir';
