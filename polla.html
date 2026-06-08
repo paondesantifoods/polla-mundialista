@@ -514,7 +514,25 @@
                     .select('id, activo')
                     .eq('id', clienteId)
                     .maybeSingle();
-                if (checkErr || !clienteCheck || clienteCheck.activo === false) {
+                if (checkErr) {
+                    if (checkErr.code === '42703') {
+                        // Columna 'activo' no existe aún — solo verificar existencia del cliente
+                        const { data: soloId, error: soloErr } = await supabaseClient
+                            .from('clientes').select('id').eq('id', clienteId).maybeSingle();
+                        if (soloErr || !soloId) {
+                            localStorage.removeItem('cliente_id');
+                            localStorage.removeItem('cliente_name');
+                            window.location.href = 'index.html';
+                            return;
+                        }
+                        // existe → permitir paso
+                    } else {
+                        localStorage.removeItem('cliente_id');
+                        localStorage.removeItem('cliente_name');
+                        window.location.href = 'index.html';
+                        return;
+                    }
+                } else if (!clienteCheck || clienteCheck.activo === false) {
                     localStorage.removeItem('cliente_id');
                     localStorage.removeItem('cliente_name');
                     window.location.href = 'index.html';

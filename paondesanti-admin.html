@@ -1018,12 +1018,24 @@
         document.getElementById('usuariosList').innerHTML = '';
         document.getElementById('usuariosEmpty').classList.add('hidden');
         try {
-            const { data, error } = await supabaseClient
+            let { data, error } = await supabaseClient
                 .from('clientes')
                 .select('id, nombres_apellidos, celular, activo')
                 .order('nombres_apellidos', { ascending: true });
+
+            // Si 'activo' no existe aún en BD, consultar sin esa columna
+            if (error && error.code === '42703') {
+                const res = await supabaseClient
+                    .from('clientes')
+                    .select('id, nombres_apellidos, celular')
+                    .order('nombres_apellidos', { ascending: true });
+                data = res.data;
+                error = res.error;
+            }
             if (error) throw error;
-            allUsuarios = data || [];
+
+            // Normalizar: activo=null → true (antes de correr SQL de migración)
+            allUsuarios = (data || []).map(u => ({ ...u, activo: u.activo !== false }));
             renderUsuarios();
         } catch (err) {
             console.error('loadUsuarios:', err);

@@ -270,9 +270,24 @@
             }
 
             btn.disabled = true;
-            btn.textContent = 'Registrando...';
+            btn.textContent = 'Verificando...';
 
             try {
+                // Pre-validar que la nueva factura no esté ya registrada
+                const { data: factExiste } = await supabaseClient
+                    .from('registro_tickets')
+                    .select('id')
+                    .eq('numero_factura', nuevaFactura)
+                    .maybeSingle();
+
+                if (factExiste) {
+                    msgEl.textContent = 'Esta factura ya está registrada en el sistema. Solicita otra factura válida en caja.';
+                    msgEl.classList.remove('hidden');
+                    return;
+                }
+
+                btn.textContent = 'Registrando...';
+
                 // Insertar nuevo ticket (el rechazado queda como historial)
                 const { error } = await supabaseClient
                     .from('registro_tickets')
@@ -419,10 +434,25 @@
             }
 
             registerButton.disabled = true;
-            registerButton.textContent = 'Guardando...';
+            registerButton.textContent = 'Verificando factura...';
             updateMessage('');
 
             try {
+                // 0. Pre-validar que la factura no esté ya registrada
+                const { data: facturaExiste, error: facturaErr } = await supabaseClient
+                    .from('registro_tickets')
+                    .select('id')
+                    .eq('numero_factura', factura)
+                    .maybeSingle();
+
+                if (!facturaErr && facturaExiste) {
+                    updateMessage('Esta factura POS ya está registrada en el sistema. Verifica con el equipo en caja.', true);
+                    facturaInput.focus();
+                    return;
+                }
+
+                registerButton.textContent = 'Guardando...';
+
                 // 1. Create client record
                 const { data, error } = await supabaseClient
                     .from('clientes')
