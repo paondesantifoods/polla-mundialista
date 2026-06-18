@@ -9,6 +9,30 @@
 </head>
 <body class="bg-slate-950 text-white min-h-screen">
 
+    <!-- PIN Gate -->
+    <div id="pinGate" class="fixed inset-0 z-[9999] bg-slate-950 flex flex-col items-center justify-center p-6">
+        <div class="w-full max-w-xs text-center space-y-5">
+            <div>
+                <p class="text-5xl mb-3">🏆</p>
+                <p class="text-[11px] font-bold text-amber-400 uppercase tracking-widest">Pa'onde Santi · Mundial 2026</p>
+                <h1 class="text-xl font-black text-white mt-1">Panel de Administración</h1>
+                <p class="text-xs text-slate-500 mt-1.5">Ingresa el PIN para continuar</p>
+            </div>
+            <div class="relative">
+                <input id="pinInput" type="password" inputmode="text" maxlength="20"
+                    placeholder="PIN de acceso"
+                    class="w-full bg-slate-900 border border-slate-700 rounded-2xl px-4 py-3.5 text-center text-base font-bold text-white tracking-widest placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-600 focus:outline-none focus:border-amber-500 transition-colors"
+                    onkeydown="if(event.key==='Enter') checkPin()">
+                <button type="button" onclick="togglePinVis()" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-sm transition-colors select-none">👁</button>
+            </div>
+            <p id="pinError" class="text-xs text-rose-400 hidden font-semibold">PIN incorrecto. Intenta de nuevo.</p>
+            <button type="button" onclick="checkPin()"
+                class="w-full h-12 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-sm transition-all shadow-lg shadow-amber-950/40">
+                Ingresar
+            </button>
+        </div>
+    </div>
+
     <!-- Header -->
     <header class="sticky top-0 z-20 bg-slate-950/95 backdrop-blur-sm border-b border-slate-800 px-4 py-3">
         <div class="flex items-center justify-between max-w-xl mx-auto">
@@ -58,24 +82,28 @@
         </div>
 
         <!-- View Toggle -->
-        <div class="px-4 pt-2 pb-1">
-            <div class="grid grid-cols-2 rounded-2xl bg-slate-900 border border-slate-800 p-1 gap-1">
+        <div class="px-4 pt-2 pb-1 overflow-x-auto">
+            <div class="flex gap-1.5 w-max min-w-full">
                 <button id="btnViewPartidos" onclick="setView('partidos')"
-                    class="h-9 rounded-xl text-xs font-bold transition-colors bg-amber-500 text-slate-950">
+                    class="h-9 px-4 rounded-xl text-xs font-bold transition-colors whitespace-nowrap bg-amber-500 text-slate-950">
                     ⚽ Partidos
                 </button>
                 <button id="btnViewTickets" onclick="setView('tickets')"
-                    class="h-9 rounded-xl text-xs font-bold transition-colors text-slate-400 hover:text-white">
+                    class="h-9 px-4 rounded-xl text-xs font-bold transition-colors whitespace-nowrap text-slate-400 hover:text-white">
                     🎫 Tickets
                     <span id="ticketsBadge" class="ml-1 hidden bg-rose-500 text-white text-[9px] font-black rounded-full px-1.5 py-0.5"></span>
                 </button>
                 <button id="btnViewPosiciones" onclick="setView('posiciones')"
-                    class="h-9 rounded-xl text-xs font-bold transition-colors text-slate-400 hover:text-white">
+                    class="h-9 px-4 rounded-xl text-xs font-bold transition-colors whitespace-nowrap text-slate-400 hover:text-white">
                     🏆 Posiciones
                 </button>
                 <button id="btnViewUsuarios" onclick="setView('usuarios')"
-                    class="h-9 rounded-xl text-xs font-bold transition-colors text-slate-400 hover:text-white">
+                    class="h-9 px-4 rounded-xl text-xs font-bold transition-colors whitespace-nowrap text-slate-400 hover:text-white">
                     👥 Usuarios
+                </button>
+                <button id="btnViewPremios" onclick="setView('premios')"
+                    class="h-9 px-4 rounded-xl text-xs font-bold transition-colors whitespace-nowrap text-slate-400 hover:text-white">
+                    🎁 Premios
                 </button>
             </div>
         </div>
@@ -140,6 +168,15 @@
             <div id="ticketsLoading" class="py-12 text-center hidden">
                 <div class="inline-block w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
                 <p class="text-sm text-slate-500 mt-3">Cargando tickets...</p>
+            </div>
+
+            <div id="ticketsError" class="py-12 text-center hidden px-4">
+                <p class="text-3xl mb-2">⚠️</p>
+                <p id="ticketsErrorMsg" class="text-rose-400 text-sm font-semibold mb-4">Error al cargar tickets.</p>
+                <button onclick="loadTickets()"
+                    class="h-10 px-6 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-sm font-semibold">
+                    Reintentar
+                </button>
             </div>
 
             <div id="ticketsEmpty" class="py-12 text-center hidden">
@@ -226,6 +263,52 @@
             <div id="usuariosList" class="space-y-3"></div>
         </div>
 
+        <!-- ── PREMIOS VIEW ── -->
+        <div id="viewPremios" class="hidden px-4 pb-24">
+            <div class="pt-3 pb-3 flex items-center justify-between gap-2">
+                <h2 class="text-sm font-bold text-white uppercase tracking-wider">Gestión de Premios</h2>
+                <button onclick="loadPremios()"
+                    class="h-8 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors">
+                    ↻ Actualizar
+                </button>
+            </div>
+
+            <!-- Banner config -->
+            <div class="rounded-2xl border border-sky-800/40 bg-sky-950/20 p-4 mb-4 flex items-center justify-between gap-3">
+                <div>
+                    <p class="text-xs font-bold text-white">Banner de Bienvenida</p>
+                    <p class="text-[10px] text-slate-500 mt-0.5">Mensaje visible en la pantalla de ingreso</p>
+                </div>
+                <button id="bannerToggleBtn" onclick="toggleBannerConfig()"
+                    class="h-8 px-4 rounded-xl text-xs font-bold transition active:scale-95 bg-slate-700 text-slate-400">
+                    Cargando...
+                </button>
+            </div>
+
+            <!-- Agregar nuevo -->
+            <div class="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 mb-4">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-amber-400 mb-3">Nuevo Premio</p>
+                <div class="flex gap-2">
+                    <input id="nuevoPremioInput" type="text" placeholder="Ej: ¡Ganaste una pizza! 🍕"
+                        class="flex-1 min-w-0 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors">
+                    <button onclick="agregarPremio()"
+                        class="h-10 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-xs font-bold transition-all shrink-0">
+                        + Agregar
+                    </button>
+                </div>
+            </div>
+
+            <div id="premiosLoading" class="py-12 text-center hidden">
+                <div class="inline-block w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-sm text-slate-500 mt-3">Cargando premios...</p>
+            </div>
+            <div id="premiosEmpty" class="py-10 text-center hidden">
+                <p class="text-3xl mb-2">🎁</p>
+                <p class="text-slate-500 text-sm">Sin premios configurados. Agrega uno arriba.</p>
+            </div>
+            <div id="premiosList" class="space-y-2"></div>
+        </div>
+
     </div>
 
     <!-- Toast -->
@@ -235,6 +318,45 @@
     </div>
 
     <script>
+    // ── PIN Gate ──────────────────────────────────────────────────────────
+    (function () {
+        if (sessionStorage.getItem('_adm') === '1') {
+            const g = document.getElementById('pinGate');
+            if (g) g.style.display = 'none';
+        } else {
+            document.body.style.overflow = 'hidden';
+        }
+    })();
+
+    function checkPin() {
+        const input = document.getElementById('pinInput');
+        const errorEl = document.getElementById('pinError');
+        const _k = atob(['MTMx', 'NDYz'].join(''));
+        if (input.value === _k) {
+            sessionStorage.setItem('_adm', '1');
+            document.body.style.overflow = '';
+            const gate = document.getElementById('pinGate');
+            gate.style.transition = 'opacity 0.35s ease';
+            gate.style.opacity = '0';
+            setTimeout(() => gate.remove(), 380);
+        } else {
+            errorEl.classList.remove('hidden');
+            input.classList.add('border-rose-500', 'focus:border-rose-500');
+            input.value = '';
+            input.focus();
+            setTimeout(() => {
+                errorEl.classList.add('hidden');
+                input.classList.remove('border-rose-500', 'focus:border-rose-500');
+            }, 2500);
+        }
+    }
+
+    function togglePinVis() {
+        const input = document.getElementById('pinInput');
+        input.type = input.type === 'password' ? 'text' : 'password';
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     const SUPABASE_URL = 'https://wpuojiqbgxqdolalzfql.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwdW9qaXFiZ3hxZG9sYWx6ZnFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDA4OTcsImV4cCI6MjA5NjIxNjg5N30.wiTgJrSogrCxDwK3YlP87rPyRUfne8OcSkirtEQQClo';
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -261,6 +383,8 @@
     let allUsuarios = [];
     let currentUsuarioFilter = 'activo';
     let currentUsuarioSearch = '';
+    let allPremios = [];
+    let editingPremioId = null;
 
     const MAX_PREMIOS_ACIERTOS = 3;
     const PREMIOS_SANTI = [
@@ -303,18 +427,19 @@
 
     function setView(view) {
         currentView = view;
-        const views = ['partidos', 'tickets', 'posiciones', 'usuarios'];
+        const views = ['partidos', 'tickets', 'posiciones', 'usuarios', 'premios'];
         const activeColors = {
             partidos: 'bg-amber-500',
             tickets: 'bg-sky-500',
             posiciones: 'bg-emerald-500',
-            usuarios: 'bg-violet-500'
+            usuarios: 'bg-violet-500',
+            premios: 'bg-amber-500'
         };
 
         views.forEach(v => {
             document.getElementById(`view${v.charAt(0).toUpperCase() + v.slice(1)}`).classList.toggle('hidden', v !== view);
             const btn = document.getElementById(`btnView${v.charAt(0).toUpperCase() + v.slice(1)}`);
-            btn.className = `h-9 rounded-xl text-xs font-bold transition-colors ${
+            btn.className = `h-9 px-4 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
                 v === view ? activeColors[v] + ' text-slate-950' : 'text-slate-400 hover:text-white'
             }`;
         });
@@ -322,6 +447,7 @@
         if (view === 'tickets') loadTickets();
         if (view === 'posiciones') loadPosiciones();
         if (view === 'usuarios') loadUsuarios();
+        if (view === 'premios') { loadPremios(); loadBannerConfig(); }
     }
 
     function setTicketFilter(estado) {
@@ -394,6 +520,46 @@
         }
     }
 
+    // Convierte UTC almacenado en BD → valor para input datetime-local en hora Bogotá (UTC-5)
+    function toLocalInputValue(fechaHora) {
+        try {
+            const d = new Date(fechaHora);
+            const bogota = new Date(d.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+            const pad = n => String(n).padStart(2, '0');
+            return `${bogota.getFullYear()}-${pad(bogota.getMonth()+1)}-${pad(bogota.getDate())}T${pad(bogota.getHours())}:${pad(bogota.getMinutes())}`;
+        } catch { return ''; }
+    }
+
+    // Convierte hora Bogotá del input → UTC ISO string para guardar en BD
+    function bogotaInputToUTC(localStr) {
+        // Bogotá es siempre UTC-5, sin cambio de hora
+        return new Date(localStr + ':00-05:00').toISOString();
+    }
+
+    async function actualizarFecha(partidoId) {
+        const input = document.getElementById(`fecha-${partidoId}`);
+        const btn   = document.getElementById(`btn-fecha-${partidoId}`);
+        if (!input || !input.value) { showToast('Selecciona fecha y hora', 'error'); return; }
+        btn.textContent = '⏳'; btn.disabled = true;
+        try {
+            const nuevaFecha = bogotaInputToUTC(input.value);
+            const { error } = await supabaseClient.from('partidos')
+                .update({ fecha_hora: nuevaFecha }).eq('id', partidoId);
+            if (error) throw error;
+            const idx = partidos.findIndex(p => p.id === partidoId);
+            if (idx !== -1) partidos[idx].fecha_hora = nuevaFecha;
+            // Actualizar la etiqueta visible en la cabecera de la tarjeta
+            const label = document.getElementById(`fecha-label-${partidoId}`);
+            if (label) label.textContent = formatDate(nuevaFecha);
+            showToast('Fecha actualizada ✓', 'success');
+            btn.textContent = '✓';
+            setTimeout(() => { btn.textContent = '📅'; btn.disabled = false; }, 2000);
+        } catch (err) {
+            showToast('Error: ' + err.message, 'error');
+            btn.textContent = '📅'; btn.disabled = false;
+        }
+    }
+
     function renderStats() {
         const con = partidos.filter(p => p.goles_local_real !== null && p.goles_local_real !== undefined).length;
         document.getElementById('statTotal').textContent = partidos.length;
@@ -445,10 +611,10 @@
         }
         list.classList.remove('hidden');
         empty.classList.add('hidden');
-        list.innerHTML = filtered.map(buildCard).join('');
+        list.innerHTML = filtered.map(p => buildCard(p, partidos.indexOf(p) + 1)).join('');
     }
 
-    function buildCard(p) {
+    function buildCard(p, matchNum) {
         const siglaL = getSigla(p.equipo_local);
         const siglaR = getSigla(p.equipo_visitante);
         const knockout = isKnockout(p.fase);
@@ -508,12 +674,21 @@
         return `
         <article id="card-${p.id}" class="rounded-2xl border ${borderColor} bg-slate-900/40 p-4 transition-colors">
 
-            <div class="flex items-center justify-between gap-2 mb-3">
-                <span class="text-xs font-black text-amber-400 shrink-0">#${p.orden_torneo ?? p.id}</span>
+            <div class="flex items-center justify-between gap-2 mb-2">
+                <span class="text-xs font-black text-amber-400 shrink-0">#${p.orden_torneo ?? matchNum}</span>
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full truncate max-w-[140px] ${phasePill}">
                     ${escapeHTML(p.fase)}
                 </span>
-                <span class="text-[10px] text-slate-500 shrink-0">${formatDate(p.fecha_hora)}</span>
+                <span id="fecha-label-${p.id}" class="text-[10px] text-slate-500 shrink-0">${formatDate(p.fecha_hora)}</span>
+            </div>
+            <div class="flex items-center gap-2 mb-3">
+                <input type="datetime-local" id="fecha-${p.id}" value="${toLocalInputValue(p.fecha_hora)}"
+                    class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white focus:border-sky-500 focus:outline-none transition-colors">
+                <button id="btn-fecha-${p.id}" onclick="actualizarFecha('${p.id}')"
+                    title="Actualizar fecha y hora del partido"
+                    class="shrink-0 h-8 w-8 rounded-xl bg-sky-700 hover:bg-sky-600 active:scale-95 text-white text-sm font-bold transition-all">
+                    📅
+                </button>
             </div>
 
             <div class="flex items-center gap-3 mb-4">
@@ -736,14 +911,14 @@
         document.getElementById('ticketsLoading').classList.remove('hidden');
         document.getElementById('ticketsList').innerHTML = '';
         document.getElementById('ticketsEmpty').classList.add('hidden');
+        document.getElementById('ticketsError').classList.add('hidden');
 
         try {
-            // Two queries — tickets don't have FK to clientes
             const [{ data: ticketsData, error: ticketsError }, { data: clientesData, error: clientesError }] =
                 await Promise.all([
                     supabaseClient
                         .from('registro_tickets')
-                        .select('id, numero_factura, estado, fecha_registro, cliente_id')
+                        .select('*')
                         .order('fecha_registro', { ascending: false }),
                     supabaseClient
                         .from('clientes')
@@ -753,14 +928,12 @@
             if (ticketsError) throw ticketsError;
             if (clientesError) throw clientesError;
 
-            // Merge client data into each ticket
             const clientesMap = new Map((clientesData || []).map(c => [String(c.id), c]));
             allTickets = (ticketsData || []).map(t => ({
                 ...t,
                 clientes: clientesMap.get(String(t.cliente_id)) || null
             }));
 
-            // Update badge with pending count
             const pendingCount = allTickets.filter(t => t.estado === 'pendiente').length;
             const badge = document.getElementById('ticketsBadge');
             if (pendingCount > 0) {
@@ -773,7 +946,14 @@
             renderTickets();
         } catch (err) {
             console.error('loadTickets:', err);
-            showToast('Error al cargar tickets: ' + (err.message || err), 'error');
+            const errEl = document.getElementById('ticketsError');
+            const msgEl = document.getElementById('ticketsErrorMsg');
+            if (err.code === '42P01') {
+                msgEl.textContent = 'La tabla registro_tickets no existe. Ejecuta el SQL de migración en Supabase.';
+            } else {
+                msgEl.textContent = err.message || 'Error al cargar tickets.';
+            }
+            errEl.classList.remove('hidden');
         } finally {
             document.getElementById('ticketsLoading').classList.add('hidden');
         }
@@ -797,8 +977,8 @@
         const cliente = t.clientes;
         const nombre = cliente?.nombres_apellidos || 'Sin nombre';
         const celular = cliente?.celular || '–';
-        const fechaStr = t.fecha_registro
-            ? new Date(t.fecha_registro).toLocaleString('es-CO', {
+        const fechaStr = (t.fecha_registro || t.created_at)
+            ? new Date(t.fecha_registro || t.created_at).toLocaleString('es-CO', {
                 day: '2-digit', month: 'short', year: 'numeric',
                 hour: '2-digit', minute: '2-digit',
                 timeZone: 'America/Bogota'
@@ -894,12 +1074,49 @@
         document.getElementById('posicionesTabla').classList.add('hidden');
 
         try {
-            const [{ data: pronData, error: e1 }, { data: clientesData, error: e2 }] = await Promise.all([
-                supabaseClient.from('pronosticos').select('id, cliente_id, puntos_ganados, premio_inmediato_ganado'),
-                supabaseClient.from('clientes').select('id, nombres_apellidos, celular')
+            const [{ data: pronData, error: e1 }, { data: clientesData, error: e2 }, { data: partidosData, error: e3 }] = await Promise.all([
+                supabaseClient.from('pronosticos').select('*'),
+                supabaseClient.from('clientes').select('id, nombres_apellidos, celular'),
+                supabaseClient.from('partidos').select('id, goles_local_real, goles_visitante_real, clasifica_real').order('fecha_hora')
             ]);
             if (e1) throw e1;
             if (e2) throw e2;
+            // e3 no es fatal: si falla usamos el array en memoria
+
+            // Merge resultados frescos sobre el array en memoria
+            const freshPartidosMap = new Map();
+            (partidosData || partidos || []).forEach(p => freshPartidosMap.set(String(p.id), p));
+            // Actualizar array global también para mantener consistencia
+            if (partidosData) {
+                partidosData.forEach(fresh => {
+                    const idx = partidos.findIndex(p => String(p.id) === String(fresh.id));
+                    if (idx !== -1) {
+                        partidos[idx].goles_local_real = fresh.goles_local_real;
+                        partidos[idx].goles_visitante_real = fresh.goles_visitante_real;
+                        partidos[idx].clasifica_real = fresh.clasifica_real;
+                    }
+                });
+            }
+
+            const PUNTAJES = { exacto: 12, cercano: 8, empateCorrecto: 8, ganadorCorrecto: 5, parcial: 2, bonusClasifica: 3 };
+            const partidosMap = freshPartidosMap.size > 0 ? freshPartidosMap : new Map((partidos || []).map(p => [String(p.id), p]));
+            function safeN(v) { if (v === null || v === undefined || v === '') return null; const n = Number(v); return isNaN(n) ? null : n; }
+            function calcPuntos(pron) {
+                const partido = partidosMap.get(String(pron.partido_id));
+                if (!partido) return { points: 0, exacto: false };
+                const gL = safeN(pron.goles_local_apuesta), gV = safeN(pron.goles_visitante_apuesta);
+                const rL = safeN(partido.goles_local_real), rV = safeN(partido.goles_visitante_real);
+                if (gL === null || gV === null || rL === null || rV === null) return { points: 0, exacto: false };
+                if (gL === rL && gV === rV) return { points: PUNTAJES.exacto, exacto: true };
+                const pronDiff = gL - gV, realDiff = rL - rV;
+                if (gL === gV && rL === rV) return { points: PUNTAJES.empateCorrecto, exacto: false };
+                let points = 0;
+                if (Math.sign(pronDiff) === Math.sign(realDiff) && Math.abs(pronDiff) === Math.abs(realDiff)) points = PUNTAJES.cercano;
+                else if (Math.sign(pronDiff) === Math.sign(realDiff)) points = PUNTAJES.ganadorCorrecto;
+                else if (gL === rL || gV === rV) points = PUNTAJES.parcial;
+                if (pron.clasifica && partido.clasifica_real && rL === rV && pron.clasifica === partido.clasifica_real) points += PUNTAJES.bonusClasifica;
+                return { points, exacto: false };
+            }
 
             const clientesMap = new Map((clientesData || []).map(c => [String(c.id), c]));
             const acum = new Map();
@@ -908,9 +1125,10 @@
                 const key = String(p.cliente_id);
                 if (!acum.has(key)) acum.set(key, { puntos: 0, exactos: 0, total: 0, premiosProns: [] });
                 const e = acum.get(key);
-                e.puntos += p.puntos_ganados || 0;
+                const { points, exacto } = calcPuntos(p);
+                e.puntos += points;
                 e.total++;
-                if ((p.puntos_ganados || 0) === 12) {
+                if (exacto) {
                     e.exactos++;
                     if (p.premio_inmediato_ganado) e.premiosProns.push(p);
                 }
@@ -1107,7 +1325,14 @@
                 .from('clientes')
                 .update({ activo: nuevoEstado })
                 .eq('id', usuarioId);
-            if (error) throw error;
+            if (error) {
+                if (error.code === '42703') {
+                    showToast('Ejecuta primero en Supabase: ALTER TABLE clientes ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT TRUE;', 'error');
+                    renderUsuarios();
+                    return;
+                }
+                throw error;
+            }
             const idx = allUsuarios.findIndex(u => String(u.id) === String(usuarioId));
             if (idx !== -1) allUsuarios[idx].activo = nuevoEstado;
             showToast(nuevoEstado ? '✅ Usuario reactivado' : '🚫 Usuario desactivado', 'success');
@@ -1160,13 +1385,15 @@
         try {
             const [{ data: pronData, error: e1 }, { data: clientesData, error: e2 }] = await Promise.all([
                 supabaseClient.from('pronosticos').select('cliente_id').eq('partido_id', partidoId),
-                supabaseClient.from('clientes').select('id, nombres_apellidos, celular')
+                supabaseClient.from('clientes').select('id, nombres_apellidos, celular, activo')
             ]);
             if (e1) throw e1;
             if (e2) throw e2;
 
             const yaApuestaron = new Set((pronData || []).map(r => String(r.cliente_id)));
-            const sinApuesta = (clientesData || []).filter(c => !yaApuestaron.has(String(c.id)));
+            const sinApuesta = (clientesData || []).filter(c =>
+                !yaApuestaron.has(String(c.id)) && c.activo !== false
+            );
 
             if (!sinApuesta.length) {
                 body.innerHTML = `
@@ -1200,6 +1427,213 @@
         } catch (err) {
             body.innerHTML = `<p class="text-xs text-rose-400 text-center py-4">${escapeHTML(err.message)}</p>`;
         }
+    }
+
+    // ── BANNER CONFIG ─────────────────────────────────────────────────────
+
+    let _bannerConfigId = null;
+    let _bannerActivo   = true;
+
+    async function loadBannerConfig() {
+        const { data } = await supabaseClient
+            .from('premios').select('id, activo')
+            .eq('tipo', 'config').eq('nombre', 'banner_bienvenida').maybeSingle();
+        if (data) {
+            _bannerConfigId = data.id;
+            _bannerActivo   = data.activo;
+        }
+        _updateBannerBtn();
+    }
+
+    function _updateBannerBtn() {
+        const btn = document.getElementById('bannerToggleBtn');
+        if (!btn) return;
+        if (_bannerActivo) {
+            btn.textContent = '✅ Activo — Desactivar';
+            btn.className = 'h-8 px-4 rounded-xl text-xs font-bold transition active:scale-95 bg-emerald-900/40 text-emerald-300 hover:bg-emerald-800/60';
+        } else {
+            btn.textContent = '🚫 Inactivo — Activar';
+            btn.className = 'h-8 px-4 rounded-xl text-xs font-bold transition active:scale-95 bg-rose-900/40 text-rose-300 hover:bg-rose-800/60';
+        }
+    }
+
+    async function toggleBannerConfig() {
+        if (!_bannerConfigId) { showToast('Ejecuta el SQL de migración primero', 'error'); return; }
+        const nuevoEstado = !_bannerActivo;
+        const { error } = await supabaseClient
+            .from('premios').update({ activo: nuevoEstado }).eq('id', _bannerConfigId);
+        if (error) { showToast('Error: ' + error.message, 'error'); return; }
+        _bannerActivo = nuevoEstado;
+        _updateBannerBtn();
+        showToast(nuevoEstado ? 'Banner activado ✓' : 'Banner desactivado ✓', 'success');
+    }
+
+    // ── PREMIOS CRUD ──────────────────────────────────────────────────────
+
+    async function loadPremios() {
+        document.getElementById('premiosLoading').classList.remove('hidden');
+        document.getElementById('premiosList').innerHTML = '';
+        document.getElementById('premiosEmpty').classList.add('hidden');
+
+        const { data, error } = await supabaseClient
+            .from('premios').select('*').order('orden');
+
+        document.getElementById('premiosLoading').classList.add('hidden');
+
+        if (error) {
+            if (error.code === '42P01') {
+                document.getElementById('premiosList').innerHTML =
+                    '<p class="text-center text-sm text-slate-500 py-8">La tabla <code>premios</code> no existe aún. Ejecuta el SQL de migración en Supabase.</p>';
+            } else {
+                showToast('Error al cargar premios: ' + error.message, 'error');
+            }
+            return;
+        }
+
+        allPremios = data || [];
+        renderPremiosAdmin();
+    }
+
+    function renderPremiosAdmin() {
+        const list = document.getElementById('premiosList');
+        const empty = document.getElementById('premiosEmpty');
+
+        const aciertos = allPremios.filter(p => p.tipo !== 'podio');
+        const podio = allPremios.filter(p => p.tipo === 'podio');
+
+        if (!allPremios.length) {
+            list.innerHTML = '';
+            empty.classList.remove('hidden');
+            return;
+        }
+        empty.classList.add('hidden');
+
+        const buildCard = (p) => `
+            <div class="rounded-2xl border ${p.activo ? 'border-slate-800 bg-slate-900/30' : 'border-slate-900 bg-slate-900/10'} p-4 flex items-start gap-3 ${p.activo ? '' : 'opacity-50'}">
+                <div class="flex-1 min-w-0">
+                    ${editingPremioId === p.id ? `
+                        <input id="editInput_${p.id}" type="text" value="${escapeHTML(p.nombre)}"
+                            class="w-full bg-slate-950 border border-amber-500 rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+                        <div class="flex gap-2 mt-2">
+                            <button onclick="guardarEdicionPremio(${p.id})" class="h-7 px-3 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold transition active:scale-95">Guardar</button>
+                            <button onclick="cancelarEdicionPremio()" class="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-bold transition active:scale-95">Cancelar</button>
+                        </div>
+                    ` : `
+                        <p class="text-sm text-white leading-snug">${escapeHTML(p.nombre)}</p>
+                        <p class="text-[10px] text-slate-500 mt-1">${p.activo ? '<span class="text-emerald-400">Activo</span>' : '<span class="text-rose-400">Inactivo</span>'}</p>
+                    `}
+                </div>
+                <div class="flex flex-col gap-1.5 shrink-0">
+                    <button onclick="togglePremioActivo(${p.id}, ${!p.activo})"
+                        class="h-7 px-3 rounded-lg text-xs font-bold transition active:scale-95 ${p.activo ? 'bg-rose-900/40 text-rose-300 hover:bg-rose-800/60' : 'bg-emerald-900/40 text-emerald-300 hover:bg-emerald-800/60'}">
+                        ${p.activo ? 'Desactivar' : 'Activar'}
+                    </button>
+                    <button onclick="editarPremio(${p.id})"
+                        class="h-7 px-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition active:scale-95">
+                        ✏️ Editar
+                    </button>
+                    ${p.tipo !== 'podio' ? `
+                    <button onclick="eliminarPremio(${p.id})"
+                        class="h-7 px-3 rounded-lg bg-rose-900/40 hover:bg-rose-800/60 text-rose-300 text-xs font-bold transition active:scale-95">
+                        🗑️ Borrar
+                    </button>` : ''}
+                </div>
+            </div>`;
+
+        const medals = ['🥇', '🥈', '🥉'];
+        const podioOrdenado = [1, 2, 3].map(pos => podio.find(p => p.posicion === pos)).filter(Boolean);
+
+        list.innerHTML = `
+            ${podio.length ? `
+            <p class="text-[10px] font-bold uppercase tracking-wider text-amber-400 mt-1 mb-2">Premios del Podio Final</p>
+            <div class="space-y-2 mb-5">
+                ${podioOrdenado.map((p, i) => `
+                <div class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 flex items-start gap-3">
+                    <span class="text-lg shrink-0 mt-0.5">${medals[i]}</span>
+                    <div class="flex-1 min-w-0">
+                        ${editingPremioId === p.id ? `
+                            <input id="editInput_${p.id}" type="text" value="${escapeHTML(p.nombre)}"
+                                class="w-full bg-slate-950 border border-amber-500 rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+                            <div class="flex gap-2 mt-2">
+                                <button onclick="guardarEdicionPremio(${p.id})" class="h-7 px-3 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold transition active:scale-95">Guardar</button>
+                                <button onclick="cancelarEdicionPremio()" class="h-7 px-3 rounded-lg bg-slate-700 text-white text-xs font-bold transition active:scale-95">Cancelar</button>
+                            </div>
+                        ` : `
+                            <p class="text-sm text-white leading-snug">${escapeHTML(p.nombre)}</p>
+                            <p class="text-[10px] text-amber-500/60 mt-0.5">${['1er', '2do', '3er'][i]} Puesto</p>
+                        `}
+                    </div>
+                    <button onclick="editarPremio(${p.id})"
+                        class="h-7 px-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition active:scale-95 shrink-0">
+                        ✏️ Editar
+                    </button>
+                </div>`).join('')}
+            </div>` : ''}
+
+            ${aciertos.length ? `
+            <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 mb-2">Premios por Acierto Exacto</p>
+            <div class="space-y-2">${aciertos.map(p => buildCard(p)).join('')}</div>
+            ` : ''}
+        `;
+    }
+
+    function editarPremio(id) {
+        editingPremioId = id;
+        renderPremiosAdmin();
+        setTimeout(() => {
+            const inp = document.getElementById(`editInput_${id}`);
+            if (inp) { inp.focus(); inp.select(); }
+        }, 50);
+    }
+
+    function cancelarEdicionPremio() {
+        editingPremioId = null;
+        renderPremiosAdmin();
+    }
+
+    async function guardarEdicionPremio(id) {
+        const inp = document.getElementById(`editInput_${id}`);
+        const nombre = inp ? inp.value.trim() : '';
+        if (!nombre) { showToast('El nombre no puede estar vacío', 'error'); return; }
+        const { error } = await supabaseClient.from('premios').update({ nombre }).eq('id', id);
+        if (error) { showToast('Error al guardar: ' + error.message, 'error'); return; }
+        const idx = allPremios.findIndex(p => p.id === id);
+        if (idx >= 0) allPremios[idx].nombre = nombre;
+        editingPremioId = null;
+        renderPremiosAdmin();
+        showToast('Premio actualizado ✓', 'success');
+    }
+
+    async function togglePremioActivo(id, activo) {
+        const { error } = await supabaseClient.from('premios').update({ activo }).eq('id', id);
+        if (error) { showToast('Error: ' + error.message, 'error'); return; }
+        const idx = allPremios.findIndex(p => p.id === id);
+        if (idx >= 0) allPremios[idx].activo = activo;
+        renderPremiosAdmin();
+        showToast(activo ? 'Premio activado ✓' : 'Premio desactivado', 'success');
+    }
+
+    async function eliminarPremio(id) {
+        if (!confirm('¿Eliminar este premio permanentemente? Esta acción no se puede deshacer.')) return;
+        const { error } = await supabaseClient.from('premios').delete().eq('id', id);
+        if (error) { showToast('Error: ' + error.message, 'error'); return; }
+        allPremios = allPremios.filter(p => p.id !== id);
+        renderPremiosAdmin();
+        showToast('Premio eliminado ✓', 'success');
+    }
+
+    async function agregarPremio() {
+        const inp = document.getElementById('nuevoPremioInput');
+        const nombre = inp.value.trim();
+        if (!nombre) { showToast('Escribe el nombre del nuevo premio', 'error'); inp.focus(); return; }
+        const maxOrden = allPremios.length > 0 ? Math.max(...allPremios.map(p => p.orden)) : 0;
+        const { data, error } = await supabaseClient.from('premios')
+            .insert([{ nombre, activo: true, orden: maxOrden + 1 }]).select();
+        if (error) { showToast('Error: ' + error.message, 'error'); return; }
+        allPremios.push(data[0]);
+        inp.value = '';
+        renderPremiosAdmin();
+        showToast('Premio agregado ✓', 'success');
     }
 
     function cerrarModalRecordatorio() {
