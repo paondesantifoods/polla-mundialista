@@ -396,23 +396,27 @@
         "¡Qué arquerazo! Te ganaste una empanada de la casa gratis para tu próxima compra. 🥟"
     ];
 
-    function getPremioForPronostico(pronId) {
+    function getPremioForPronostico(pronId, lista) {
+        const arr = (lista && lista.length) ? lista : PREMIOS_SANTI;
         let hash = 0;
         const str = String(pronId);
         for (let i = 0; i < str.length; i++) {
             hash = ((hash << 5) - hash) + str.charCodeAt(i);
             hash |= 0;
         }
-        return PREMIOS_SANTI[Math.abs(hash) % PREMIOS_SANTI.length];
+        return arr[Math.abs(hash) % arr.length];
     }
 
-    function computePremiosUsuario(premiosProns) {
+    function computePremiosUsuario(premiosProns, lista) {
         const set = new Set();
         const ganados = [];
         for (const pron of premiosProns) {
             if (ganados.length >= MAX_PREMIOS_ACIERTOS) break;
-            const premio = getPremioForPronostico(pron.id);
-            if (!set.has(premio)) { set.add(premio); ganados.push(premio); }
+            const premio = getPremioForPronostico(pron.id, lista);
+            if (!set.has(premio)) {
+                set.add(premio);
+                ganados.push({ id: pron.id, texto: premio, reclamado: !!pron.premio_reclamado });
+            }
         }
         return ganados;
     }
@@ -1074,14 +1078,19 @@
         document.getElementById('posicionesTabla').classList.add('hidden');
 
         try {
-            const [{ data: pronData, error: e1 }, { data: clientesData, error: e2 }, { data: partidosData, error: e3 }] = await Promise.all([
+            const [{ data: pronData, error: e1 }, { data: clientesData, error: e2 }, { data: partidosData, error: e3 }, { data: premiosDBData }] = await Promise.all([
                 supabaseClient.from('pronosticos').select('*'),
                 supabaseClient.from('clientes').select('id, nombres_apellidos, celular'),
-                supabaseClient.from('partidos').select('id, goles_local_real, goles_visitante_real, clasifica_real').order('fecha_hora')
+                supabaseClient.from('partidos').select('id, goles_local_real, goles_visitante_real, clasifica_real').order('fecha_hora'),
+                supabaseClient.from('premios').select('nombre, tipo').eq('activo', true).order('orden')
             ]);
             if (e1) throw e1;
             if (e2) throw e2;
             // e3 no es fatal: si falla usamos el array en memoria
+
+            // Premios de acierto exacto (no podio) tomados del DB; fallback a lista local
+            const premiosAcierto = (premiosDBData || []).filter(p => p.tipo !== 'podio').map(p => p.nombre);
+            const listaPremios = premiosAcierto.length > 0 ? premiosAcierto : PREMIOS_SANTI;
 
             // Merge resultados frescos sobre el array en memoria
             const freshPartidosMap = new Map();
@@ -1142,7 +1151,7 @@
                     puntos: stats.puntos,
                     exactos: stats.exactos,
                     total: stats.total,
-                    premiosGanados: computePremiosUsuario(stats.premiosProns)
+                    premiosGanados: computePremiosUsuario(stats.premiosProns, listaPremios)
                 }))
                 .sort((a, b) => b.puntos - a.puntos || b.exactos - a.exactos);
 
@@ -1161,7 +1170,10 @@
         }
     }
 
+    let _posicionesCache = [];
+
     function renderPosiciones(posiciones) {
+        _posicionesCache = posiciones;
         // Podio top 3 — orden visual: 2°, 1°, 3°
         const podioEl = document.getElementById('posicionesPodio');
         const medals  = ['🥇', '🥈', '🥉'];
@@ -1201,16 +1213,21 @@
             const rowBg = i % 2 === 0 ? '' : 'bg-slate-950/30';
             const atMax = p.premiosGanados.length >= MAX_PREMIOS_ACIERTOS;
 
-            const premiosDetail = p.premiosGanados.length > 0
-                ? `<div class="mt-0.5 space-y-px">${p.premiosGanados.map(pr => {
-                    // Recortar: quitar emojis y mostrar texto corto
-                    const textoCorto = pr.replace(/[¡!🍺🎟️🍟🥤💰🥟]/g, '').trim().split('Te ganaste').pop().trim().substring(0, 40);
-                    return `<p class="text-[8px] text-emerald-400/80 leading-tight truncate">🎁 ${escapeHTML(textoCorto)}</p>`;
-                  }).join('')}${atMax ? '<p class="text-[8px] text-amber-400/60 mt-0.5">⛔ Tope de premios alcanzado</p>' : ''}</div>`
-                : '';
-
             const premCount = p.premiosGanados.length;
+            const pendingCount = p.premiosGanados.filter(pr => !pr.reclamado).length;
             const premStyle = atMax ? 'text-amber-400 font-black' : premCount > 0 ? 'text-emerald-400 font-bold' : 'text-slate-600';
+
+            const premiosDetail = premCount > 0
+                ? `<button onclick="abrirModalPremios('${escapeAttr(p.id)}','${escapeAttr(p.nombre)}')" class="mt-1 flex items-center gap-1 text-left">
+                    ${p.premiosGanados.map(pr => {
+                        const dot = pr.reclamado
+                            ? '<span class="w-1.5 h-1.5 rounded-full bg-slate-600 inline-block"></span>'
+                            : '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"></span>';
+                        const textoCorto = pr.texto.replace(/[¡!🍺🎟️🍟🥤💰🥟]/g, '').trim().split('Te ganaste').pop().trim().substring(0, 35);
+                        return `<span class="flex items-center gap-1 text-[8px] ${pr.reclamado ? 'text-slate-500' : 'text-emerald-400/90'} leading-tight">${dot}${escapeHTML(textoCorto)}</span>`;
+                    }).join('')}
+                   </button>`
+                : '';
 
             return `
             <div class="grid grid-cols-[1.5rem_1fr_3rem_2.5rem_2rem] gap-x-2 px-3 py-2.5 items-start ${rowBg} ${i > 0 ? 'border-t border-slate-800/50' : ''}">
@@ -1222,11 +1239,71 @@
                 </div>
                 <span class="text-center text-sm font-black pt-0.5 ${pos === 1 ? 'text-amber-400' : pos <= 3 ? 'text-white' : 'text-slate-300'}">${p.puntos}</span>
                 <span class="text-center text-xs text-emerald-400 font-bold pt-0.5">${p.exactos}</span>
-                <span class="text-center text-xs pt-0.5 ${premStyle}">${premCount || '–'}</span>
+                <span class="text-center text-xs pt-0.5 ${premStyle}" title="${pendingCount} pendiente(s)">${premCount || '–'}${pendingCount > 0 ? `<span class="ml-0.5 text-[7px] text-rose-400 font-black align-super">${pendingCount}</span>` : ''}</span>
             </div>`;
         }).join('');
 
         document.getElementById('posicionesTabla').classList.remove('hidden');
+    }
+
+    function abrirModalPremios(playerId, nombre) {
+        const player = _posicionesCache.find(p => String(p.id) === String(playerId));
+        if (!player) return;
+        document.getElementById('modalPremiosNombre').textContent = nombre;
+        const list = document.getElementById('modalPremiosList');
+        if (!player.premiosGanados.length) {
+            list.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">Sin premios ganados.</p>';
+        } else {
+            list.innerHTML = player.premiosGanados.map(pr => `
+                <div id="premio-card-${escapeAttr(pr.id)}" class="rounded-xl border ${pr.reclamado ? 'border-slate-700 bg-slate-800/30' : 'border-emerald-700/40 bg-emerald-900/10'} p-3 flex items-start justify-between gap-3">
+                    <p class="text-xs ${pr.reclamado ? 'text-slate-500 line-through' : 'text-white'} leading-snug flex-1">${escapeHTML(pr.texto)}</p>
+                    ${pr.reclamado
+                        ? '<span class="shrink-0 text-[10px] font-bold text-slate-500 bg-slate-800 rounded-full px-2 py-0.5">✓ Reclamado</span>'
+                        : `<button onclick="reclamarPremio('${escapeAttr(pr.id)}', this)" class="shrink-0 text-[10px] font-bold text-emerald-950 bg-emerald-400 hover:bg-emerald-300 active:scale-95 rounded-full px-3 py-1 transition">Reclamar</button>`
+                    }
+                </div>`).join('');
+        }
+        const modal = document.getElementById('modalReclamarPremios');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function cerrarModalPremios() {
+        const modal = document.getElementById('modalReclamarPremios');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    async function reclamarPremio(pronosticoId, btn) {
+        btn.disabled = true;
+        btn.textContent = '...';
+        try {
+            const { error } = await supabaseClient
+                .from('pronosticos')
+                .update({ premio_reclamado: true })
+                .eq('id', pronosticoId);
+            if (error) throw error;
+            // Update cache
+            _posicionesCache.forEach(p => {
+                const pr = p.premiosGanados.find(pr => String(pr.id) === String(pronosticoId));
+                if (pr) pr.reclamado = true;
+            });
+            // Update card in modal
+            const card = document.getElementById(`premio-card-${pronosticoId}`);
+            if (card) {
+                card.className = card.className.replace('border-emerald-700/40 bg-emerald-900/10', 'border-slate-700 bg-slate-800/30');
+                const p = card.querySelector('p');
+                if (p) p.className = 'text-xs text-slate-500 line-through leading-snug flex-1';
+                btn.outerHTML = '<span class="shrink-0 text-[10px] font-bold text-slate-500 bg-slate-800 rounded-full px-2 py-0.5">✓ Reclamado</span>';
+            }
+            showToast('Premio marcado como reclamado ✓', 'success');
+            // Refresh table row to update dots/badge
+            renderPosiciones(_posicionesCache);
+        } catch (err) {
+            btn.disabled = false;
+            btn.textContent = 'Reclamar';
+            showToast('Error: ' + (err.message || err), 'error');
+        }
     }
 
     // ── Usuarios ─────────────────────────────────────────────────────────
@@ -1668,6 +1745,20 @@
             <div id="modalRecordatorioBody" class="p-4 max-h-[55vh] overflow-y-auto">
                 <p class="text-xs text-slate-500 text-center py-6">Cargando...</p>
             </div>
+        </div>
+    </div>
+
+    <!-- ── Modal Reclamar Premios ── -->
+    <div id="modalReclamarPremios" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 px-4" onclick="if(event.target===this)cerrarModalPremios()">
+        <div class="w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+                <div>
+                    <p class="text-sm font-bold text-white" id="modalPremiosNombre">—</p>
+                    <p class="text-[10px] text-slate-500 mt-0.5">Premios por acierto exacto</p>
+                </div>
+                <button onclick="cerrarModalPremios()" class="text-slate-400 hover:text-white text-xl leading-none font-bold">×</button>
+            </div>
+            <div id="modalPremiosList" class="p-4 space-y-2 max-h-[60vh] overflow-y-auto"></div>
         </div>
     </div>
 
