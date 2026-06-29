@@ -160,8 +160,8 @@
             </div>
 
             <div class="space-y-3">
-                <div class="px-1">
-                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Fixture Oficial</h3>
+                <div class="px-1 flex items-center justify-between gap-2">
+                    <h3 id="fixtureFaseLabel" class="text-sm font-bold text-slate-400 uppercase tracking-wider">Fixture Oficial</h3>
                 </div>
                 <div id="fixtureCards" class="grid gap-3 sm:grid-cols-2 w-full min-w-0"></div>
             </div>
@@ -503,6 +503,8 @@
         let countdownTargetId = null;
 
         const puntajes = { exacto: 12, cercano: 8, empateCorrecto: 8, ganadorCorrecto: 5, parcial: 2, bonusClasifica: 3 };
+        const PHASES_ORDER = ['Fase de Grupos', 'Dieciseisavos', 'Octavos de Final', 'Cuartos de Final', 'Semifinales', 'Tercer Puesto', 'Final'];
+        const GROUP_PHASE = 'Fase de Grupos';
         const tabs = [tabPronosticos, tabRanking, tabReglamento];
 
         let PREMIOS_PODIO = [
@@ -947,19 +949,45 @@
             actionPending.dataset.visitante = upcoming.equipo_visitante;
         }
 
+        function getActiveFase() {
+            const now = Date.now();
+            const active = partidos.filter(p => {
+                const t = new Date(p.fecha_hora).getTime();
+                const sinResultado = p.goles_local_real === null || p.goles_local_real === undefined;
+                return sinResultado; // upcoming OR live
+            });
+            for (const fase of PHASES_ORDER) {
+                if (active.some(p => (p.fase || GROUP_PHASE) === fase)) return fase;
+            }
+            // Todos jugados: mostrar la última fase con partidos
+            for (let i = PHASES_ORDER.length - 1; i >= 0; i--) {
+                if (partidos.some(p => (p.fase || GROUP_PHASE) === PHASES_ORDER[i])) return PHASES_ORDER[i];
+            }
+            return GROUP_PHASE;
+        }
+
         function renderFixture(filterType = 'upcoming') {
             const now = Date.now();
+            const activeFase = getActiveFase();
 
-            // Partidos en juego: ya empezaron pero sin resultado ingresado
+            // Partidos en juego: ya empezaron pero sin resultado ingresado, de la fase activa
             const liveMatches = partidos.filter(p => {
                 const t = new Date(p.fecha_hora).getTime();
-                return t <= now && (p.goles_local_real === null || p.goles_local_real === undefined);
+                const isLive = t <= now && (p.goles_local_real === null || p.goles_local_real === undefined);
+                return isLive && (p.fase || GROUP_PHASE) === activeFase;
             });
 
-            let displayed = partidos.filter(partido => new Date(partido.fecha_hora).getTime() > now);
+            let displayed = partidos.filter(p => new Date(p.fecha_hora).getTime() > now && (p.fase || GROUP_PHASE) === activeFase);
             if (filterType === 'pending') displayed = displayed.filter(partido => !hasUserPronostico(partido.id));
 
             fixtureCards.innerHTML = '';
+
+            // Actualizar etiqueta de fase
+            const faseLabel = document.getElementById('fixtureFaseLabel');
+            if (faseLabel) {
+                const phaseDisplay = activeFase === GROUP_PHASE ? 'Fase de Grupos' : activeFase;
+                faseLabel.textContent = phaseDisplay;
+            }
 
             // ── Tarjetas "En Juego" ──────────────────────────────────────────
             liveMatches.forEach((partido, idx) => {
