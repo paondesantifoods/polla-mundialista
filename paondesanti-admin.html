@@ -754,11 +754,11 @@
                 <div class="grid grid-cols-2 gap-2">
                     <button id="cl-local-${p.id}" onclick="setClasificaAdmin('${escapeAttr(String(p.id))}','local')"
                         class="h-8 rounded-xl ${p.clasifica_real === 'local' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300'} text-[10px] font-bold transition truncate px-2">
-                        ✓ ${escapeHTML(p.equipo_local)}
+                        ${p.clasifica_real === 'local' ? '✓ ' : ''}${escapeHTML(p.equipo_local)}
                     </button>
                     <button id="cl-visit-${p.id}" onclick="setClasificaAdmin('${escapeAttr(String(p.id))}','visitor')"
                         class="h-8 rounded-xl ${p.clasifica_real === 'visitor' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300'} text-[10px] font-bold transition truncate px-2">
-                        ✓ ${escapeHTML(p.equipo_visitante)}
+                        ${p.clasifica_real === 'visitor' ? '✓ ' : ''}${escapeHTML(p.equipo_visitante)}
                     </button>
                 </div>
             </div>` : ''}
@@ -774,6 +774,12 @@
         const base = 'h-8 rounded-xl text-[10px] font-bold transition truncate px-2 ';
         btnLocal.className = base + (valor === 'local' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300');
         btnVisit.className = base + (valor === 'visitor' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300');
+        // Actualizar texto con/sin checkmark
+        const partido = partidos.find(p => String(p.id) === String(partidoId));
+        if (partido) {
+            btnLocal.textContent = (valor === 'local' ? '✓ ' : '') + (partido.equipo_local || 'Local');
+            btnVisit.textContent = (valor === 'visitor' ? '✓ ' : '') + (partido.equipo_visitante || 'Visitante');
+        }
     }
 
     async function guardarResultado(partidoId) {
