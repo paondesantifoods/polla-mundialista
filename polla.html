@@ -1369,15 +1369,16 @@
             scoreLocal.textContent = existing ? String(existing.goles_local_apuesta || 0) : '0';
             scoreVisitor.textContent = existing ? String(existing.goles_visitante_apuesta || 0) : '0';
             selectedClasifica = null;
+            clasificaLocal.className = 'h-10 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 transition cursor-pointer';
+            clasificaVisitor.className = 'h-10 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 transition cursor-pointer';
 
-            if(partido.es_eliminatoria) {
+            if (partido.es_eliminatoria) {
                 bonusEliminatoriaContainer.classList.remove('hidden');
+                // Restaurar selección existente al editar
+                if (existing && existing.clasifica) selectClasifica(existing.clasifica);
             } else {
                 bonusEliminatoriaContainer.classList.add('hidden');
             }
-
-            clasificaLocal.className = 'h-10 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 transition cursor-pointer';
-            clasificaVisitor.className = 'h-10 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 transition cursor-pointer';
             pronosticoWarning.className = 'hidden';
             openModal(modalPronostico);
         }
