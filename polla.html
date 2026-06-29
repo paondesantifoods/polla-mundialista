@@ -1373,12 +1373,12 @@
             clasificaVisitor.className = 'h-10 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 transition cursor-pointer';
 
             if (partido.es_eliminatoria) {
-                bonusEliminatoriaContainer.classList.remove('hidden');
-                // Restaurar selección existente al editar
-                if (existing && existing.clasifica) selectClasifica(existing.clasifica);
-            } else {
-                bonusEliminatoriaContainer.classList.add('hidden');
+                const gl = Number(scoreLocal.textContent);
+                const gv = Number(scoreVisitor.textContent);
+                // Restaurar clasifica solo si el pronóstico existente era empate
+                if (existing && existing.clasifica && gl === gv) selectClasifica(existing.clasifica);
             }
+            updateClasificaVisibility();
             pronosticoWarning.className = 'hidden';
             openModal(modalPronostico);
         }
@@ -1388,6 +1388,24 @@
             let value = Number(element.textContent) + delta;
             if (value < 0) value = 0;
             element.textContent = String(value);
+            updateClasificaVisibility();
+        }
+
+        function updateClasificaVisibility() {
+            if (!partidoSeleccionado || !partidoSeleccionado.es_eliminatoria) {
+                bonusEliminatoriaContainer.classList.add('hidden');
+                return;
+            }
+            const gl = Number(scoreLocal.textContent);
+            const gv = Number(scoreVisitor.textContent);
+            if (gl === gv) {
+                bonusEliminatoriaContainer.classList.remove('hidden');
+            } else {
+                bonusEliminatoriaContainer.classList.add('hidden');
+                selectedClasifica = null;
+                clasificaLocal.className = 'h-10 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 transition cursor-pointer';
+                clasificaVisitor.className = 'h-10 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 transition cursor-pointer';
+            }
         }
 
         function selectClasifica(side) {
@@ -1412,7 +1430,7 @@
             const golesLocal = Number(scoreLocal.textContent);
             const golesVisitante = Number(scoreVisitor.textContent);
             
-            if (partidoSeleccionado.es_eliminatoria && selectedClasifica === null) {
+            if (partidoSeleccionado.es_eliminatoria && golesLocal === golesVisitante && selectedClasifica === null) {
                 pronosticoWarning.className = 'text-xs text-rose-400 text-center font-bold';
                 pronosticoWarning.textContent = 'Especifica el equipo calificado por bonus de desempate.';
                 return;
