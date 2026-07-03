@@ -567,12 +567,33 @@
                 premiosBadge.title = 'Máximo de premios por aciertos alcanzado';
             }
 
-            premiosCards.innerHTML = misPremios.map(pr => {
+            const pendientes = misPremios.filter(pr => !pr.premio_reclamado);
+            premiosBadge.textContent = pendientes.length || misPremios.length;
+            premiosBadge.className = pendientes.length
+                ? 'text-[10px] font-black bg-emerald-500 text-slate-950 rounded-full px-2 py-0.5'
+                : 'text-[10px] font-black bg-slate-600 text-slate-300 rounded-full px-2 py-0.5';
+
+            premiosCards.innerHTML = misPremios.map((pr, idx) => {
                 const partido = partidos.find(p => String(p.id) === String(pr.partido_id));
                 const matchLabel = partido
                     ? `${escapeHTML(partido.equipo_local)} ${partido.goles_local_real}–${partido.goles_visitante_real} ${escapeHTML(partido.equipo_visitante)}`
                     : `Partido #${pr.partido_id}`;
                 const premio = getPremioForPronostico(pr.id);
+                const reclamado = !!pr.premio_reclamado;
+
+                if (reclamado) {
+                    return `
+                    <article class="rounded-2xl border border-slate-700/50 bg-slate-800/30 p-4 flex flex-col gap-3 opacity-60">
+                        <div class="flex items-start justify-between gap-2 flex-wrap">
+                            <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">✓ Reclamado</span>
+                            <span class="text-[10px] font-semibold text-slate-500">${matchLabel}</span>
+                        </div>
+                        <p class="text-sm font-bold text-slate-500 line-through leading-snug">${escapeHTML(premio)}</p>
+                        <p class="text-[10px] text-slate-600 border-t border-slate-700/40 pt-2">
+                            Ya reclamaste este premio en el local. ¡Bien hecho!
+                        </p>
+                    </article>`;
+                }
                 return `
                 <article class="prize-glow rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex flex-col gap-3" style="animation: cardSlideUp 0.35s ease both, prizeGlow 1.4s ease 0.4s;">
                     <div class="flex items-start justify-between gap-2 flex-wrap">
