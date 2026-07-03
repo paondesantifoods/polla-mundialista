@@ -951,15 +951,13 @@
 
         function getActiveFase() {
             const now = Date.now();
-            const active = partidos.filter(p => {
-                const t = new Date(p.fecha_hora).getTime();
-                const sinResultado = p.goles_local_real === null || p.goles_local_real === undefined;
-                return sinResultado; // upcoming OR live
-            });
+            // Partido "por venir": fecha en el futuro o arrancó hace menos de 2h
+            // No depende de si el admin ya ingresó el resultado
+            const upcoming = partidos.filter(p => new Date(p.fecha_hora).getTime() > now - 7200000);
             for (const fase of PHASES_ORDER) {
-                if (active.some(p => (p.fase || GROUP_PHASE) === fase)) return fase;
+                if (upcoming.some(p => (p.fase || GROUP_PHASE) === fase)) return fase;
             }
-            // Todos jugados: mostrar la última fase con partidos
+            // Todos en el pasado: mostrar la fase más reciente con partidos
             for (let i = PHASES_ORDER.length - 1; i >= 0; i--) {
                 if (partidos.some(p => (p.fase || GROUP_PHASE) === PHASES_ORDER[i])) return PHASES_ORDER[i];
             }

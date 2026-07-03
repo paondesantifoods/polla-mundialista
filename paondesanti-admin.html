@@ -207,10 +207,14 @@
                     📲 Recordatorio
                 </button>
             </div>
-            <div class="mb-3">
+            <div class="flex gap-2 mb-3">
                 <button onclick="abrirMensajeOctavos()"
-                    class="w-full h-9 rounded-xl bg-amber-900/40 hover:bg-amber-800/50 border border-amber-700/40 text-amber-300 text-xs font-bold transition active:scale-95">
-                    ⚽ Convocar Octavos de Final
+                    class="flex-1 h-9 rounded-xl bg-amber-900/40 hover:bg-amber-800/50 border border-amber-700/40 text-amber-300 text-xs font-bold transition active:scale-95">
+                    ⚽ Convocar Octavos
+                </button>
+                <button onclick="abrirMensajeColombia()"
+                    class="flex-1 h-9 rounded-xl bg-yellow-400/10 hover:bg-yellow-400/20 border border-yellow-400/40 text-yellow-300 text-xs font-bold transition active:scale-95">
+                    🇨🇴 ¡Vamos Colombia!
                 </button>
             </div>
 
@@ -1800,6 +1804,12 @@
         (nombre, url) => `¡${nombre}, esto se pone serio! ⚽🏆 Los *Octavos de Final del Mundial* comienzan el 4 de julio y cada partido puede ser el último para tu favorito.\n\nApunta tus pronósticos aquí:\n${url}\n\n🎁 P.D. Si llevas premios ganados en la polla, puedes reclamarlos en tu próxima compra en Pa'onde Santi. ¡Un premio a la vez!`
     ];
 
+    const MENSAJES_COLOMBIA = [
+        (nombre, url) => `¡${nombre}, llegó el momento! 🇨🇴💛💙❤️\n\n¡*Colombia* está en los Octavos de Final del Mundial y hay que apoyarla como se merece! No hay mejor forma de vivir el partido que con tu comida favorita de *Pa'onde Santi*.\n\nPide a domicilio o ven al local a verlo con nosotros. ¡Que el sabor colombiano acompañe a la Tricolor! 🍔⚽\n\nY si quieres poner tu pronóstico para el partido:\n${url}\n\n¡*Arriba Colombia! ¡Sí se puede!* 🔥`,
+        (nombre, url) => `¡Ey ${nombre}! 🇨🇴⚽ ¡*La Selección Colombia* lo logró y está en Octavos de Final! Este es el partido que todos estábamos esperando.\n\nCélebralo como colombiano de verdad: con buena comida de *Pa'onde Santi* al lado. Pide lo de siempre y vívelo con todo 🎉\n\n¿Ya pusiste tu pronóstico para el partido de Colombia?\n${url}\n\n💛💙❤️ ¡Vamos mi Selección!`,
+        (nombre, url) => `¡${nombre}! 🇨🇴🔥 *¡Colombia en Octavos del Mundial!*\n\nEste partido hay que verlo bien acompañado y con el estómago lleno. En *Pa'onde Santi* tenemos todo lo que necesitas para la previa y el partido. ¡Ordena tu comida favorita y apoya a la Tricolor desde casa o ven a vivirlo aquí con nosotros! 🍟🥤\n\nApunta también tu pronóstico:\n${url}\n\n💛 *¡Dale Colombia, dale!* 💛`
+    ];
+
     function _getMsgRandom(plantillas, nombre, extra) {
         const appUrl = window.location.href.replace('paondesanti-admin.html', 'polla.html');
         const idx = Math.floor(Math.random() * plantillas.length);
@@ -1929,9 +1939,9 @@
         }
     }
 
-    async function abrirMensajeOctavos() {
+    async function _abrirMensajeTodosActivos(titulo, plantillas) {
         const modal = document.getElementById('modalMensajeMasivo');
-        document.getElementById('modalMasivoTitle').textContent = '⚽ Octavos de Final';
+        document.getElementById('modalMasivoTitle').textContent = titulo;
         document.getElementById('modalMasivoBody').innerHTML = '<p class="text-xs text-slate-500 text-center py-6">Cargando...</p>';
         modal.classList.remove('hidden'); modal.classList.add('flex');
         try {
@@ -1945,13 +1955,16 @@
                 body.innerHTML = '<p class="text-xs text-slate-500 text-center py-6">No hay clientes activos.</p>';
                 return;
             }
-            window._getMsgFn = (nombre) => _getMsgRandom(MENSAJES_OCTAVOS, nombre);
+            window._getMsgFn = (nombre) => _getMsgRandom(plantillas, nombre);
             body.innerHTML = `<p class="text-[10px] text-slate-500 mb-2">${clientesData.length} participante(s) activos</p>`
                 + clientesData.map(c => _renderMasivoCard(c.nombres_apellidos, c.celular)).join('');
         } catch (err) {
             document.getElementById('modalMasivoBody').innerHTML = `<p class="text-xs text-rose-400 text-center py-6">${err.message || 'Error'}</p>`;
         }
     }
+
+    function abrirMensajeOctavos()  { _abrirMensajeTodosActivos('⚽ Octavos de Final',   MENSAJES_OCTAVOS);  }
+    function abrirMensajeColombia() { _abrirMensajeTodosActivos('🇨🇴 ¡Vamos Colombia!', MENSAJES_COLOMBIA); }
 
     function cerrarModalRecordatorio() {
         const modal = document.getElementById('modalRecordatorio');
