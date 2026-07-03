@@ -967,24 +967,33 @@
         function renderFixture(filterType = 'upcoming') {
             const now = Date.now();
             const activeFase = getActiveFase();
+            // Mostrar también la siguiente fase si hay partidos próximos en ella
+            const activeFaseIdx = PHASES_ORDER.indexOf(activeFase);
+            const nextFase = activeFaseIdx >= 0 && activeFaseIdx < PHASES_ORDER.length - 1
+                ? PHASES_ORDER[activeFaseIdx + 1] : null;
+            const fasesToShow = new Set([activeFase]);
+            if (nextFase) fasesToShow.add(nextFase);
 
-            // Partidos en juego: ya empezaron pero sin resultado ingresado, de la fase activa
+            // Partidos en juego: ya empezaron pero sin resultado ingresado, en alguna de las fases visibles
             const liveMatches = partidos.filter(p => {
                 const t = new Date(p.fecha_hora).getTime();
                 const isLive = t <= now && (p.goles_local_real === null || p.goles_local_real === undefined);
-                return isLive && (p.fase || GROUP_PHASE) === activeFase;
+                return isLive && fasesToShow.has(p.fase || GROUP_PHASE);
             });
 
-            let displayed = partidos.filter(p => new Date(p.fecha_hora).getTime() > now && (p.fase || GROUP_PHASE) === activeFase);
+            let displayed = partidos.filter(p => new Date(p.fecha_hora).getTime() > now && fasesToShow.has(p.fase || GROUP_PHASE));
             if (filterType === 'pending') displayed = displayed.filter(partido => !hasUserPronostico(partido.id));
 
             fixtureCards.innerHTML = '';
 
-            // Actualizar etiqueta de fase
+            // Actualizar etiqueta de fase — si hay partidos de la siguiente fase también, mostrar esa como título principal
             const faseLabel = document.getElementById('fixtureFaseLabel');
             if (faseLabel) {
-                const phaseDisplay = activeFase === GROUP_PHASE ? 'Fase de Grupos' : activeFase;
-                faseLabel.textContent = phaseDisplay;
+                const hasNextFaseMatches = nextFase && partidos.some(p =>
+                    (p.fase || GROUP_PHASE) === nextFase && new Date(p.fecha_hora).getTime() > now
+                );
+                const labelFase = hasNextFaseMatches ? nextFase : activeFase;
+                faseLabel.textContent = labelFase === GROUP_PHASE ? 'Fase de Grupos' : labelFase;
             }
 
             // ── Tarjetas "En Juego" ──────────────────────────────────────────
