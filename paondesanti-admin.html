@@ -430,17 +430,11 @@
     }
 
     function computePremiosUsuario(premiosProns, lista) {
-        const set = new Set();
-        const ganados = [];
-        for (const pron of premiosProns) {
-            if (ganados.length >= MAX_PREMIOS_ACIERTOS) break;
-            const premio = getPremioForPronostico(pron.id, lista);
-            if (!set.has(premio)) {
-                set.add(premio);
-                ganados.push({ id: pron.id, texto: premio, reclamado: !!pron.premio_reclamado });
-            }
-        }
-        return ganados;
+        return premiosProns.map(pron => ({
+            id: pron.id,
+            texto: getPremioForPronostico(pron.id, lista),
+            reclamado: !!pron.premio_reclamado
+        }));
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -1262,16 +1256,12 @@
             const premBadge = p.premiosGanados.length > 0
                 ? `<span class="text-[9px] font-bold text-emerald-400 bg-emerald-900/40 rounded-full px-1.5 py-0.5 mt-0.5">🎁 ${p.premiosGanados.length}</span>`
                 : '';
-            const atMax = p.premiosGanados.length >= MAX_PREMIOS_ACIERTOS
-                ? `<span class="text-[8px] text-amber-400/70 mt-0.5">tope alcanzado</span>`
-                : '';
             return `
             <div class="rounded-2xl border ${podioBgs[bgIdx]} p-3 text-center flex flex-col items-center gap-0.5">
                 <span class="text-2xl leading-none">${medals[pos - 1]}</span>
                 <p class="text-[11px] font-black text-white leading-tight truncate w-full mt-1">${escapeHTML(p.nombre.split(' ')[0])}</p>
                 <p class="text-base font-black ${pos === 1 ? 'text-amber-400' : 'text-white'}">${p.puntos} <span class="text-[9px] text-slate-500 font-normal">pts</span></p>
                 ${premBadge}
-                ${atMax}
             </div>`;
         }).join('');
         podioEl.classList.remove('hidden');
@@ -1282,11 +1272,9 @@
             const pos = i + 1;
             const posColor = pos === 1 ? 'text-amber-400 font-black' : pos <= 3 ? 'text-slate-300 font-bold' : 'text-slate-500';
             const rowBg = i % 2 === 0 ? '' : 'bg-slate-950/30';
-            const atMax = p.premiosGanados.length >= MAX_PREMIOS_ACIERTOS;
-
             const premCount = p.premiosGanados.length;
             const pendingCount = p.premiosGanados.filter(pr => !pr.reclamado).length;
-            const premStyle = atMax ? 'text-amber-400 font-black' : premCount > 0 ? 'text-emerald-400 font-bold' : 'text-slate-600';
+            const premStyle = premCount > 0 ? 'text-emerald-400 font-bold' : 'text-slate-600';
 
             const premiosDetail = premCount > 0
                 ? `<button onclick="abrirModalPremios('${escapeAttr(p.id)}','${escapeAttr(p.nombre)}')" class="mt-1 flex items-center gap-1 text-left">
@@ -1325,14 +1313,29 @@
         if (!player.premiosGanados.length) {
             list.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">Sin premios ganados.</p>';
         } else {
-            list.innerHTML = player.premiosGanados.map(pr => `
-                <div id="premio-card-${escapeAttr(pr.id)}" class="rounded-xl border ${pr.reclamado ? 'border-slate-700 bg-slate-800/30' : 'border-emerald-700/40 bg-emerald-900/10'} p-3 flex items-start justify-between gap-3">
-                    <p class="text-xs ${pr.reclamado ? 'text-slate-500 line-through' : 'text-white'} leading-snug flex-1">${escapeHTML(pr.texto)}</p>
-                    ${pr.reclamado
-                        ? '<span class="shrink-0 text-[10px] font-bold text-slate-500 bg-slate-800 rounded-full px-2 py-0.5">✓ Reclamado</span>'
-                        : `<button onclick="reclamarPremio('${escapeAttr(pr.id)}', this)" class="shrink-0 text-[10px] font-bold text-emerald-950 bg-emerald-400 hover:bg-emerald-300 active:scale-95 rounded-full px-3 py-1 transition">Reclamar</button>`
-                    }
-                </div>`).join('');
+            const total = player.premiosGanados.length;
+            const reclamados = player.premiosGanados.filter(pr => pr.reclamado).length;
+            list.innerHTML = `<p class="text-[10px] text-slate-500 mb-2">${total} premio(s) ganado(s) · ${reclamados} reclamado(s) · ${total - reclamados} pendiente(s)</p>`
+                + player.premiosGanados.map((pr, idx) => {
+                let borderCls, textCls, accion;
+                if (pr.reclamado) {
+                    borderCls = 'border-slate-700 bg-slate-800/30';
+                    textCls = 'text-slate-500 line-through';
+                    accion = '<span class="shrink-0 text-[10px] font-bold text-slate-500 bg-slate-800 rounded-full px-2 py-0.5">✓ Reclamado</span>';
+                } else {
+                    borderCls = 'border-emerald-700/40 bg-emerald-900/10';
+                    textCls = 'text-white';
+                    accion = `<button onclick="reclamarPremio('${escapeAttr(pr.id)}', this)" class="shrink-0 text-[10px] font-bold text-emerald-950 bg-emerald-400 hover:bg-emerald-300 active:scale-95 rounded-full px-3 py-1 transition">Reclamar</button>`;
+                }
+                return `
+                <div id="premio-card-${escapeAttr(pr.id)}" class="rounded-xl border ${borderCls} p-3 flex items-start justify-between gap-3">
+                    <div class="flex-1 min-w-0">
+                        <span class="text-[9px] text-slate-600 font-bold">#${idx + 1}</span>
+                        <p class="text-xs ${textCls} leading-snug">${escapeHTML(pr.texto)}</p>
+                    </div>
+                    ${accion}
+                </div>`;
+            }).join('');
         }
         const modal = document.getElementById('modalReclamarPremios');
         modal.classList.remove('hidden');

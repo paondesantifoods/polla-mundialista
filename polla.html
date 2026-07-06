@@ -537,24 +537,13 @@
             const premiosCards = document.getElementById('premiosCards');
             const premiosBadge = document.getElementById('premiosBadge');
 
-            const MAX_PREMIOS = 3;
             const candidatos = pronosticos.filter(pr =>
                 String(pr.cliente_id) === String(clienteId) &&
                 pr.puntos_ganados === 12 &&
                 pr.premio_inmediato_ganado === true
             );
 
-            // Máximo 3 premios, sin premios repetidos para el mismo usuario
-            const premiosYaAsignados = new Set();
-            const misPremios = [];
-            for (const pr of candidatos) {
-                if (misPremios.length >= MAX_PREMIOS) break;
-                const premio = getPremioForPronostico(pr.id);
-                if (!premiosYaAsignados.has(premio)) {
-                    premiosYaAsignados.add(premio);
-                    misPremios.push(pr);
-                }
-            }
+            const misPremios = candidatos;
 
             if (!misPremios.length) {
                 premiosSection.classList.add('hidden');
@@ -562,16 +551,14 @@
             }
 
             premiosSection.classList.remove('hidden');
-            premiosBadge.textContent = misPremios.length;
-            if (candidatos.length >= MAX_PREMIOS) {
-                premiosBadge.title = 'Máximo de premios por aciertos alcanzado';
-            }
-
             const pendientes = misPremios.filter(pr => !pr.premio_reclamado);
             premiosBadge.textContent = pendientes.length || misPremios.length;
             premiosBadge.className = pendientes.length
                 ? 'text-[10px] font-black bg-emerald-500 text-slate-950 rounded-full px-2 py-0.5'
                 : 'text-[10px] font-black bg-slate-600 text-slate-300 rounded-full px-2 py-0.5';
+
+            // Determinar cuál es el próximo a reclamar (el primer no reclamado)
+            const primerPendienteIdx = misPremios.findIndex(pr => !pr.premio_reclamado);
 
             premiosCards.innerHTML = misPremios.map((pr, idx) => {
                 const partido = partidos.find(p => String(p.id) === String(pr.partido_id));
@@ -580,29 +567,44 @@
                     : `Partido #${pr.partido_id}`;
                 const premio = getPremioForPronostico(pr.id);
                 const reclamado = !!pr.premio_reclamado;
+                const esSiguiente = idx === primerPendienteIdx;
 
                 if (reclamado) {
                     return `
                     <article class="rounded-2xl border border-slate-700/50 bg-slate-800/30 p-4 flex flex-col gap-3 opacity-60">
                         <div class="flex items-start justify-between gap-2 flex-wrap">
-                            <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">✓ Reclamado</span>
+                            <span class="text-[10px] font-black text-slate-500 uppercase tracking-wider">✓ Premio #${idx+1} reclamado</span>
                             <span class="text-[10px] font-semibold text-slate-500">${matchLabel}</span>
                         </div>
                         <p class="text-sm font-bold text-slate-500 line-through leading-snug">${escapeHTML(premio)}</p>
                         <p class="text-[10px] text-slate-600 border-t border-slate-700/40 pt-2">
-                            Ya reclamaste este premio en el local. ¡Bien hecho!
+                            Ya reclamaste este premio. ¡Bien hecho!
                         </p>
                     </article>`;
                 }
+                if (esSiguiente) {
+                    return `
+                    <article class="prize-glow rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex flex-col gap-3" style="animation: cardSlideUp 0.35s ease both, prizeGlow 1.4s ease 0.4s;">
+                        <div class="flex items-start justify-between gap-2 flex-wrap">
+                            <span class="text-[10px] font-black text-emerald-400 uppercase tracking-wider">🎁 Premio #${idx+1} disponible</span>
+                            <span class="text-[10px] font-semibold text-slate-400">${matchLabel}</span>
+                        </div>
+                        <p class="text-sm font-black text-white leading-snug">${escapeHTML(premio)}</p>
+                        <p class="text-[10px] text-emerald-300/60 leading-relaxed border-t border-emerald-500/20 pt-2">
+                            Muestra esta pantalla en caja en tu próximo pedido para redimirlo.
+                        </p>
+                    </article>`;
+                }
+                // En espera — hay que reclamar los anteriores primero
                 return `
-                <article class="prize-glow rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex flex-col gap-3" style="animation: cardSlideUp 0.35s ease both, prizeGlow 1.4s ease 0.4s;">
+                <article class="rounded-2xl border border-amber-700/30 bg-amber-900/5 p-4 flex flex-col gap-3">
                     <div class="flex items-start justify-between gap-2 flex-wrap">
-                        <span class="text-[10px] font-black text-emerald-400 uppercase tracking-wider">⚽ Marcador Exacto · 12 pts</span>
-                        <span class="text-[10px] font-semibold text-slate-400">${matchLabel}</span>
+                        <span class="text-[10px] font-black text-amber-500/70 uppercase tracking-wider">⏳ Premio #${idx+1} · en espera</span>
+                        <span class="text-[10px] font-semibold text-slate-600">${matchLabel}</span>
                     </div>
-                    <p class="text-sm font-black text-white leading-snug">${escapeHTML(premio)}</p>
-                    <p class="text-[10px] text-emerald-300/60 leading-relaxed border-t border-emerald-500/20 pt-2">
-                        Muestra esta pantalla en caja en tu próximo pedido para redimirlo.
+                    <p class="text-sm font-bold text-amber-200/50 leading-snug">${escapeHTML(premio)}</p>
+                    <p class="text-[10px] text-amber-600/50 border-t border-amber-800/30 pt-2">
+                        Reclama el premio anterior primero. Cada premio se canjea en una visita separada.
                     </p>
                 </article>`;
             }).join('');
@@ -1664,6 +1666,23 @@
             const badge = document.getElementById('resultadosBadge');
             if (!list) return;
 
+            // Construir mapa de premios por partido para mostrar estado correcto
+            const candidatosPremios = pronosticos.filter(pr =>
+                String(pr.cliente_id) === String(clienteId) &&
+                pr.puntos_ganados === 12 && pr.premio_inmediato_ganado === true
+            );
+            const _premiosPorPron = new Map(); // pronId → {numero, texto, reclamado, disponible}
+            let _premioIdx = 0;
+            let _primerPendienteEncontrado = false;
+            for (const pr of candidatosPremios) {
+                _premioIdx++;
+                const texto = getPremioForPronostico(pr.id);
+                const reclamado = !!pr.premio_reclamado;
+                const disponible = !reclamado && !_primerPendienteEncontrado;
+                if (!reclamado && !_primerPendienteEncontrado) _primerPendienteEncontrado = true;
+                _premiosPorPron.set(String(pr.id), { numero: _premioIdx, texto, reclamado, disponible });
+            }
+
             const jugados = partidos.filter(p =>
                 p.goles_local_real !== null && p.goles_local_real !== undefined &&
                 p.goles_visitante_real !== null && p.goles_visitante_real !== undefined
@@ -1752,15 +1771,37 @@
                             ${pron ? `<span class="text-[11px] font-black text-white">${puntos > 0 ? '+' : ''}${puntos}pts</span>` : ''}
                         </div>
                     </div>
-                    ${pron && pron.premio_inmediato_ganado === true ? `
+                    ${(() => {
+                        if (!pron || pron.premio_inmediato_ganado !== true) return '';
+                        const pi = _premiosPorPron.get(String(pron.id));
+                        if (!pi) return '';
+                        if (pi.reclamado) return `
+                    <div class="mt-1 pt-2.5 border-t border-slate-700/50 flex items-start gap-2">
+                        <span class="text-base leading-none mt-0.5 opacity-30">🎁</span>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5 line-through">Premio #${pi.numero} — Reclamado</p>
+                            <p class="text-xs text-slate-500 line-through leading-snug">${escapeHTML(pi.texto)}</p>
+                        </div>
+                    </div>`;
+                        if (pi.disponible) return `
                     <div class="mt-1 pt-2.5 border-t border-emerald-500/25 flex items-start gap-2">
                         <span class="text-base leading-none mt-0.5">🎁</span>
                         <div>
-                            <p class="text-[10px] font-black text-emerald-400 uppercase tracking-wider mb-0.5">Premio ganado</p>
-                            <p class="text-xs text-emerald-300 leading-snug">${escapeHTML(getPremioForPronostico(pron.id))}</p>
+                            <p class="text-[10px] font-black text-emerald-400 uppercase tracking-wider mb-0.5">Premio #${pi.numero} — ¡Disponible!</p>
+                            <p class="text-xs text-emerald-300 leading-snug">${escapeHTML(pi.texto)}</p>
                             <p class="text-[9px] text-slate-500 mt-1">Muéstralo en caja en tu próximo pedido.</p>
                         </div>
-                    </div>` : ''}
+                    </div>`;
+                        return `
+                    <div class="mt-1 pt-2.5 border-t border-amber-500/25 flex items-start gap-2">
+                        <span class="text-base leading-none mt-0.5">⏳</span>
+                        <div>
+                            <p class="text-[10px] font-black text-amber-400 uppercase tracking-wider mb-0.5">Premio #${pi.numero} — En espera</p>
+                            <p class="text-xs text-amber-300/70 leading-snug">${escapeHTML(pi.texto)}</p>
+                            <p class="text-[9px] text-slate-500 mt-1">Reclama tus premios anteriores primero.</p>
+                        </div>
+                    </div>`;
+                    })()}
                 </div>`;
             }).join('');
         }
