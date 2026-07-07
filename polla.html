@@ -1803,7 +1803,25 @@
                         </div>
                     </div>
                     ${(() => {
-                        if (!pron || pron.premio_inmediato_ganado !== true) return '';
+                        if (!pron) return '';
+                        // Exacto sin premio para Bélgica vs USA (partido bloqueado por admin)
+                        if (pron.puntos_ganados === 12 && pron.premio_inmediato_ganado !== true) {
+                            const loc = (partido.equipo_local  || '').toLowerCase();
+                            const vis = (partido.equipo_visitante || '').toLowerCase();
+                            const esBelgicaUSA = loc.includes('belg') || vis.includes('belg') ||
+                                loc.includes('ee') || vis.includes('ee') ||
+                                loc.includes('estado') || vis.includes('estado') ||
+                                loc.includes('usa') || vis.includes('usa');
+                            if (esBelgicaUSA) return `
+                    <div class="mt-1 pt-2.5 border-t border-slate-700/30 flex items-start gap-2 opacity-60">
+                        <span class="text-sm leading-none mt-0.5">🎁</span>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Marcador exacto</p>
+                            <p class="text-[9px] text-slate-500">Este partido no otorgó premio. ¡Sigue participando!</p>
+                        </div>
+                    </div>`;
+                        }
+                        if (pron.premio_inmediato_ganado !== true) return '';
                         const pi = _premiosPorPron.get(String(pron.id));
                         if (!pi) return '';
                         if (pi.reclamado) return `
