@@ -1154,8 +1154,8 @@
                     </div>
 
                     <div class="flex justify-end">
-                        <button class="h-9 px-5 rounded-full text-xs font-bold ${isLocked ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : done ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-amber-500 hover:bg-amber-400 text-slate-950'}" ${isLocked ? 'disabled' : ''} onclick="openPronostico('${partido.id}','${escapeHTML(partido.equipo_local)}','${escapeHTML(partido.equipo_visitante)}')">
-                            ${isLocked ? '🔒 Cerrado' : done ? 'Editar' : 'Pronosticar'}
+                        <button class="h-9 px-5 rounded-full text-xs font-bold ${isLocked || done ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-amber-500 hover:bg-amber-400 text-slate-950'}" ${isLocked || done ? 'disabled' : ''} onclick="openPronostico('${partido.id}','${escapeHTML(partido.equipo_local)}','${escapeHTML(partido.equipo_visitante)}')">
+                            ${isLocked ? '🔒 Cerrado' : done ? '✓ Registrado' : 'Pronosticar'}
                         </button>
                     </div>
                 `;
@@ -1405,6 +1405,12 @@
         function openPronostico(id, local, visitante) {
             const partido = partidos.find(item => String(item.id) === String(id));
             if (!partido) return;
+            // Regla permanente: si ya registró pronóstico no puede cambiarlo
+            const existing = pronosticos.find(pr => String(pr.partido_id) === String(id) && String(pr.cliente_id) === String(clienteId));
+            if (existing) {
+                _showMatchLocked('🔒 Tu pronóstico ya está registrado. No se permiten cambios.');
+                return;
+            }
             const deadline = new Date(partido.fecha_hora).getTime() - 60000;
             if (Date.now() >= deadline) {
                 _showMatchLocked('⛔ Tiempo cerrado — este partido ya inició');
@@ -1416,10 +1422,8 @@
             modalMatchTitle.textContent = `${local} vs ${visitante}`;
             localLabel.innerHTML = `${getFlagImgTag(local,'h-6 w-8 mr-2 inline-block')} ${escapeHTML(local)}`;
             visitorLabel.innerHTML = `${getFlagImgTag(visitante,'h-6 w-8 mr-2 inline-block')} ${escapeHTML(visitante)}`;
-            // Prefill con pronóstico existente si lo hay
-            const existing = pronosticos.find(pr => String(pr.partido_id) === String(id) && String(pr.cliente_id) === String(clienteId));
-            scoreLocal.textContent = existing ? String(existing.goles_local_apuesta || 0) : '0';
-            scoreVisitor.textContent = existing ? String(existing.goles_visitante_apuesta || 0) : '0';
+            scoreLocal.textContent = '0';
+            scoreVisitor.textContent = '0';
             selectedClasifica = null;
             clasificaLocal.className = 'h-10 rounded-xl bg-slate-800 text-xs font-bold text-slate-300 transition cursor-pointer';
             clasificaLocal.textContent = local;
@@ -1427,9 +1431,7 @@
             clasificaVisitor.textContent = visitante;
 
             if (partido.es_eliminatoria) {
-                const gl = Number(scoreLocal.textContent);
-                const gv = Number(scoreVisitor.textContent);
-                if (existing && existing.clasifica && gl === gv) selectClasifica(existing.clasifica);
+                updateClasificaVisibility();
             }
             updateClasificaVisibility();
             pronosticoWarning.className = 'hidden';
@@ -1502,7 +1504,15 @@
             }
 
             try {
-                const { error } = await supabaseClient.from('pronosticos').upsert([payload], { onConflict: 'cliente_id,partido_id' });
+                // Regla permanente: INSERT único, no permite cambios al pronóstico ya registrado
+                const alreadyExists = pronosticos.some(pr => String(pr.partido_id) === String(partidoSeleccionado.id) && String(pr.cliente_id) === String(clienteId));
+                if (alreadyExists) {
+                    pronosticoWarning.className = 'text-xs text-rose-400 text-center font-bold';
+                    pronosticoWarning.textContent = '🔒 Tu pronóstico ya está registrado. No se permiten cambios.';
+                    setTimeout(() => closeModal(modalPronostico), 2000);
+                    return;
+                }
+                const { error } = await supabaseClient.from('pronosticos').insert([payload]);
                 if (error) throw error;
                 closeModal(modalPronostico);
                 await cargarPronosticos();
