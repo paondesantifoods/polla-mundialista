@@ -691,6 +691,18 @@
             }
             updateCountdown();
             setInterval(updateCountdown, 1000);
+            // Refrescar fixture cada 60s para bloquear partidos que arrancan mientras el usuario tiene la app abierta
+            setInterval(() => {
+                renderPendingCard();
+                renderFixture(filterPending.classList.contains('bg-amber-500') ? 'pending' : 'upcoming');
+            }, 60000);
+            // Refrescar cuando el usuario vuelve a la pestaña (regresa del celular bloqueado, etc.)
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    renderPendingCard();
+                    renderFixture(filterPending.classList.contains('bg-amber-500') ? 'pending' : 'upcoming');
+                }
+            });
             await cargarDatos();
             renderPendingCard();
             renderFixture('upcoming');
@@ -1382,12 +1394,22 @@
             return pronosticos.some(pron => String(pron.partido_id) === String(partidoId) && String(pron.cliente_id) === String(clienteId));
         }
 
+        function _showMatchLocked(msg) {
+            const banner = document.createElement('div');
+            banner.textContent = msg;
+            banner.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1e293b;border:1px solid #dc2626;color:#fca5a5;font-size:13px;font-weight:700;padding:16px 24px;border-radius:16px;z-index:9999;text-align:center;max-width:80vw;box-shadow:0 4px 32px #0008;';
+            document.body.appendChild(banner);
+            setTimeout(() => banner.remove(), 2400);
+        }
+
         function openPronostico(id, local, visitante) {
             const partido = partidos.find(item => String(item.id) === String(id));
             if (!partido) return;
             const deadline = new Date(partido.fecha_hora).getTime() - 60000;
             if (Date.now() >= deadline) {
-                alert('El tiempo límite para este encuentro caducó.');
+                _showMatchLocked('⛔ Tiempo cerrado — este partido ya inició');
+                renderPendingCard();
+                renderFixture(filterPending.classList.contains('bg-amber-500') ? 'pending' : 'upcoming');
                 return;
             }
             partidoSeleccionado = partido;
