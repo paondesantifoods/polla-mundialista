@@ -1031,6 +1031,27 @@
                 faseLabel.textContent = labelFase === GROUP_PHASE ? 'Fase de Grupos' : labelFase;
             }
 
+            // ── Banner especial Semifinales / Final ──────────────────────────
+            if (activeFase === 'Semifinales' || activeFase === 'Final') {
+                const _banner = document.createElement('div');
+                _banner.className = 'col-span-full rounded-2xl p-4 text-center';
+                _banner.style.animation = 'cardSlideUp 0.35s ease both';
+                if (activeFase === 'Semifinales') {
+                    _banner.style.background = 'linear-gradient(135deg,#1e1b4b 0%,#312e81 60%,#1e1b4b 100%)';
+                    _banner.style.border = '1px solid rgba(139,92,246,0.4)';
+                    _banner.innerHTML = `
+                        <p class="text-base font-black text-white mb-1">🔥 ¡Semifinales del Mundial!</p>
+                        <p class="text-xs text-violet-300 leading-relaxed">Solo 4 equipos quedan en pie. ¡Registra tu pronóstico antes del pitazo y reclama tus premios!</p>`;
+                } else {
+                    _banner.style.background = 'linear-gradient(135deg,#422006 0%,#78350f 60%,#422006 100%)';
+                    _banner.style.border = '1px solid rgba(245,158,11,0.5)';
+                    _banner.innerHTML = `
+                        <p class="text-base font-black text-white mb-1">🏆 ¡La Gran Final del Mundial!</p>
+                        <p class="text-xs text-amber-300 leading-relaxed">Es el último partido. Pronostica el campeón y no olvides reclamar tus premios antes de que termine el Mundial.</p>`;
+                }
+                fixtureCards.appendChild(_banner);
+            }
+
             // ── Tarjetas "En Juego" ──────────────────────────────────────────
             liveMatches.forEach((partido, idx) => {
                 const userPron = pronosticos.find(pr => String(pr.partido_id) === String(partido.id) && String(pr.cliente_id) === String(clienteId));
