@@ -1151,7 +1151,7 @@
         try {
             const [{ data: pronData, error: e1 }, { data: clientesData, error: e2 }, { data: partidosData, error: e3 }, { data: premiosDBData }] = await Promise.all([
                 supabaseClient.from('pronosticos').select('*'),
-                supabaseClient.from('clientes').select('id, nombres_apellidos, celular'),
+                supabaseClient.from('clientes').select('id, nombres_apellidos, celular, activo'),
                 supabaseClient.from('partidos').select('id, goles_local_real, goles_visitante_real, clasifica_real').order('fecha_hora'),
                 supabaseClient.from('premios').select('nombre, tipo').eq('activo', true).order('orden')
             ]);
@@ -1215,6 +1215,7 @@
             });
 
             const posiciones = [...acum.entries()]
+                .filter(([id]) => clientesMap.get(id)?.activo !== false) // bloqueados no aparecen en el podio
                 .map(([id, stats]) => ({
                     id,
                     nombre: clientesMap.get(id)?.nombres_apellidos || 'Desconocido',

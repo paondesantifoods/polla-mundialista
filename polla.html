@@ -829,9 +829,9 @@
 
         async function cargarClientes() {
             try {
-                const { data, error } = await supabaseClient.from('clientes').select('id,nombres_apellidos');
+                const { data, error } = await supabaseClient.from('clientes').select('id,nombres_apellidos,activo');
                 if (error) throw error;
-                clientesMap = new Map((data || []).map(c => [String(c.id), c.nombres_apellidos]));
+                clientesMap = new Map((data || []).map(c => [String(c.id), { nombre: c.nombres_apellidos, activo: c.activo !== false }]));
             } catch (error) {
                 console.error('Error cargando clientes:', error);
                 clientesMap = new Map();
@@ -1645,7 +1645,9 @@
         function buildRanking() {
             const players = new Map();
             todosPodios.forEach(podio => {
-                const nombreFromMap = clientesMap.get(String(podio.cliente_id));
+                const clienteInfo = clientesMap.get(String(podio.cliente_id));
+                if (clienteInfo && clienteInfo.activo === false) return; // bloqueado: no aparece en el podio
+                const nombreFromMap = clienteInfo && clienteInfo.nombre;
                 const nombre = nombreFromMap || (String(podio.cliente_id) === String(clienteId) ? clienteName : `Competidor #${podio.cliente_id}`);
                 if (!players.has(podio.cliente_id)) {
                     players.set(podio.cliente_id, { id: podio.cliente_id, name: nombre, exactos: 0, cercanos: 0, bonos: 0, parciales: 0, totalPoints: 0, podioChampion: podio.campeon || null });
@@ -1655,11 +1657,13 @@
             });
 
             pronosticos.forEach(pron => {
+                const clienteInfo = clientesMap.get(String(pron.cliente_id));
+                if (clienteInfo && clienteInfo.activo === false) return; // bloqueado: no aparece en el podio
                 const partido = partidos.find(item => String(item.id) === String(pron.partido_id));
                 if (!partido) return;
                     const actualLocal = safeNumber(partido.goles_local_real);
                     const actualVisitante = safeNumber(partido.goles_visitante_real);
-                const nombreFromMap = clientesMap.get(String(pron.cliente_id));
+                const nombreFromMap = clienteInfo && clienteInfo.nombre;
                 const nombre = nombreFromMap || (String(pron.cliente_id) === String(clienteId) ? clienteName : `Competidor #${pron.cliente_id}`);
                 if (!players.has(pron.cliente_id)) {
                     players.set(pron.cliente_id, { id: pron.cliente_id, name: nombre, exactos: 0, cercanos: 0, bonos: 0, parciales: 0, totalPoints: 0, podioChampion: null });
