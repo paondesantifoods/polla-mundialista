@@ -229,6 +229,12 @@
                     🏆 Avisar Ganadores de la Polla (Top 3)
                 </button>
             </div>
+            <div class="flex gap-2 mb-3">
+                <button onclick="abrirMensajeParticipacion()"
+                    class="flex-1 h-9 rounded-xl bg-fuchsia-500/10 hover:bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs font-bold transition active:scale-95">
+                    🎁 Detalle por Participación (Todos)
+                </button>
+            </div>
 
             <div id="posicionesLoading" class="py-12 text-center">
                 <div class="inline-block w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
@@ -1890,6 +1896,12 @@
         }
     }
 
+    const MENSAJES_PARTICIPACION = [
+        (nombre, url) => `¡${nombre}! 🎉 Ya se acabó el Mundial (¡Campeón España! 🇪🇸🏆) y con él nuestra Polla Mundialista de Pa'onde Santi.\n\n¡Gracias por jugar con nosotros durante todo el torneo! 🙌 Como agradecimiento por tu participación, tenemos un pequeño detalle esperándote en el local.\n\nAcércate cuando quieras a reclamarlo. ¡Nos vemos pronto! ⚽🍔\n${url}`,
+        (nombre, url) => `¡Hola ${nombre}! ⚽🏆 El Mundial terminó con España como Campeón 🇪🇸 y la polla de Pa'onde Santi también llegó a su final.\n\nQueremos agradecerte por haber participado durante todo el torneo 🙌 Pásate por el local, tenemos un detalle especial para ti por jugar con nosotros.\n\n¡Gracias por acompañarnos! 🎉\n${url}`,
+        (nombre, url) => `¡${nombre}, gracias por ser parte de la Polla Mundialista! 🙌⚽ España se coronó Campeón del Mundo 🇪🇸 y así cerramos este torneo lleno de pronósticos y buena vibra.\n\nComo agradecimiento por tu participación, te tenemos un detalle en el local. ¡Ven a reclamarlo! 🎁\n\n¡Nos vemos pronto en Pa'onde Santi! 🎉\n${url}`
+    ];
+
     function _getMsgRandom(plantillas, nombre, extra) {
         const appUrl = window.location.href.replace('paondesanti-admin.html', 'polla.html');
         const idx = Math.floor(Math.random() * plantillas.length);
@@ -2046,6 +2058,7 @@
     function abrirMensajeOctavos()  { _abrirMensajeTodosActivos('⚽ Octavos de Final',   MENSAJES_OCTAVOS);  }
     function abrirMensajeColombia() { _abrirMensajeTodosActivos('🇨🇴 ¡Vamos Colombia!', MENSAJES_COLOMBIA); }
     function abrirMensajeFinal()    { _abrirMensajeTodosActivos('🏆 Gran Final: España vs Argentina', MENSAJES_FINAL); }
+    function abrirMensajeParticipacion() { _abrirMensajeTodosActivos('🎁 Detalle por Participación', MENSAJES_PARTICIPACION); }
 
     function cerrarModalRecordatorio() {
         const modal = document.getElementById('modalRecordatorio');
