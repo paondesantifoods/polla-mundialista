@@ -223,6 +223,12 @@
                     🏆 Gran Final: España vs Argentina
                 </button>
             </div>
+            <div class="flex gap-2 mb-3">
+                <button onclick="abrirMensajeGanadoresPodio()"
+                    class="flex-1 h-9 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold transition active:scale-95">
+                    🏆 Avisar Ganadores de la Polla (Top 3)
+                </button>
+            </div>
 
             <div id="posicionesLoading" class="py-12 text-center">
                 <div class="inline-block w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
@@ -1825,6 +1831,64 @@
         (nombre, url) => `¡Hola ${nombre}! ⚽🏆 El Mundial llega a su fin y la Final no podía ser mejor: *España vs Argentina* este domingo. ¡Un partidazo total!\n\nNo olvides poner tu pronóstico antes de que empiece:\n${url}\n\nGracias por acompañarnos durante todo el torneo. Sigue visitándonos en el local para ver la Final con nosotros y reclamar tus premios 🍔🍺`,
         (nombre, url) => `¡${nombre}, llegó el gran final! 🏆🔥 Este domingo se define todo: *España vs Argentina*. ¡Partidazo asegurado!\n\nRegistra tu pronóstico antes del pitazo:\n${url}\n\nGracias por ser parte de la polla mundialista de Pa'onde Santi 🙌 Te esperamos en el local para la Final y para que reclames tus premios. ¡Nos vemos el domingo! 🎊`
     ];
+
+    const MENSAJES_GANADOR_PODIO = {
+        1: (nombre, url) => `¡${nombre}, FELICITACIONES! 🏆🥇\n\n¡*España* es el nuevo Campeón del Mundo 2026! 🇪🇸⚽ Y tú te coronaste en el *puesto #1* de la Polla Mundialista de Pa'onde Santi. ¡El mejor pronosticador del torneo! 🎉\n\nAcércate al local a reclamar tu gran premio. ¡Te lo ganaste! 🙌\n\nGracias por jugar toda la polla con nosotros.\n${url}`,
+        2: (nombre, url) => `¡${nombre}, felicitaciones! 🥈⚽\n\n*España* se coronó Campeón del Mundo 2026 🇪🇸 y tú terminaste en el *puesto #2* de la Polla Mundialista de Pa'onde Santi. ¡Excelente torneo el tuyo!\n\nPásate por el local a reclamar tu premio. 🎉\n\nGracias por participar en toda la polla.\n${url}`,
+        3: (nombre, url) => `¡${nombre}, felicitaciones! 🥉⚽\n\nCon *España* como Campeón del Mundo 2026 🇪🇸, tú cerraste el torneo en el *puesto #3* de la Polla Mundialista de Pa'onde Santi. ¡Gran participación!\n\nAcércate al local a reclamar tu premio. 🎉\n\nGracias por jugar toda la polla con nosotros.\n${url}`
+    };
+
+    function _renderMasivoCardGanador(nombre, celular, posicion) {
+        const tel = formatCelular(celular);
+        const medalla = posicion === 1 ? '🥇' : posicion === 2 ? '🥈' : '🥉';
+        if (!tel) {
+            return `<div class="flex items-center justify-between gap-3 rounded-xl bg-slate-800/40 px-3 py-2.5">
+                <p class="text-xs text-white font-semibold truncate">${medalla} ${escapeHTML(nombre)}</p>
+                <span class="shrink-0 text-[10px] text-slate-600 italic">Sin celular</span>
+            </div>`;
+        }
+        return `<div class="flex items-center justify-between gap-3 rounded-xl bg-slate-800/40 px-3 py-2.5">
+            <p class="text-xs text-white font-semibold truncate">${medalla} ${escapeHTML(nombre)}</p>
+            <button data-nombre="${escapeAttr(nombre)}" data-tel="${tel}" data-posicion="${posicion}"
+                onclick="enviarWAGanador(this)"
+                class="shrink-0 h-7 px-3 rounded-xl bg-green-600 hover:bg-green-500 active:scale-95 text-white text-[10px] font-bold transition">
+                Enviar
+            </button>
+        </div>`;
+    }
+
+    function enviarWAGanador(btn) {
+        const nombre = btn.dataset.nombre;
+        const celular = btn.dataset.tel;
+        const posicion = Number(btn.dataset.posicion);
+        const appUrl = window.location.href.replace('paondesanti-admin.html', 'polla.html');
+        const mensaje = MENSAJES_GANADOR_PODIO[posicion](nombre, appUrl);
+        const url = `https://wa.me/${celular}?text=${encodeURIComponent(mensaje)}`;
+        window.open(url, '_blank', 'noopener,noreferrer');
+        btn.textContent = '✓ Enviado';
+        btn.disabled = true;
+        btn.className = btn.className.replace('bg-green-600 hover:bg-green-500', 'bg-slate-700');
+    }
+
+    async function abrirMensajeGanadoresPodio() {
+        const modal = document.getElementById('modalMensajeMasivo');
+        document.getElementById('modalMasivoTitle').textContent = '🏆 Ganadores de la Polla (Top 3)';
+        document.getElementById('modalMasivoBody').innerHTML = '<p class="text-xs text-slate-500 text-center py-6">Cargando...</p>';
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+        try {
+            if (!_posicionesCache.length) await loadPosiciones();
+            const top3 = _posicionesCache.slice(0, 3);
+            const body = document.getElementById('modalMasivoBody');
+            if (!top3.length) {
+                body.innerHTML = '<p class="text-xs text-slate-500 text-center py-6">Aún no hay posiciones registradas.</p>';
+                return;
+            }
+            body.innerHTML = '<p class="text-[10px] text-slate-500 mb-2">Top 3 ganadores del torneo — España Campeón 🏆</p>'
+                + top3.map((p, i) => _renderMasivoCardGanador(p.nombre, p.celular, i + 1)).join('');
+        } catch (err) {
+            document.getElementById('modalMasivoBody').innerHTML = `<p class="text-xs text-rose-400 text-center py-6">${err.message || 'Error'}</p>`;
+        }
+    }
 
     function _getMsgRandom(plantillas, nombre, extra) {
         const appUrl = window.location.href.replace('paondesanti-admin.html', 'polla.html');
